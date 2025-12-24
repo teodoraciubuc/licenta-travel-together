@@ -1,6 +1,9 @@
 # Database – Travel Together
 
-Acest folder conține fișiere legate de proiectarea și implementarea bazei de date MySQL
+Acest folder contine fisierele legate de proiectarea si implementarea bazei de date MySQL utilizate in aplicatia web Travel Together.
+
+Baza de date a fost conceputa pentru a sustine functionalitatile principale ale aplicatiei:
+managementul utilizatorilor, recomandari personalizate, harta interactiva a destinatiilor, planificarea itinerariilor, componenta sociala si suportul AI.
 
 ## Fișiere planificate
 
@@ -8,14 +11,16 @@ Acest folder conține fișiere legate de proiectarea și implementarea bazei de 
 
 ## Structura bazei de date
 
-Baza de date va include următoarele tabele principale:
-
-- **users** – date despre utilizatori
-- **preferences** – preferințele utilizatorilor (intrare necesară pentru recomandări)
-- **destinations** – destinații și atribute turistice
-- **visited** – țările/locurile vizitate (utilizate pentru afișarea pe hartă)
-- **reviews / interactions** – informații folosite pentru îmbunătățirea recomandărilor
-- **recommendations_history** – arhivarea recomandărilor generate
+users – stocheaza datele de baza ale utilizatorilor (autentificare si identificare)
+tags – defineste categoriile de interese (ex: natura, cultura, relaxare)
+user_preferences – scorurile 1–5 asociate preferintelor utilizatorilor
+destination_tags – asocierea dintre destinatii si etichetele lor
+destinations – destinatii turistice cu coordonate geografice (latitudine, longitudine)
+user_map_status – marcheaza destinatiile ca „visited” sau „wishlist” pentru fiecare utilizator
+itineraries – calatoriile create de utilizatori
+itinerary_items – lista ordonata de destinatii pentru fiecare itinerariu, organizata pe zile
+travel_posts – postari si amintiri de calatorie asociate destinatiilor
+chat_logs – inregistreaza interactiunile utilizatorilor cu chatbot-ul AI
 
 ## Caracteristici ale bazei de date
 
