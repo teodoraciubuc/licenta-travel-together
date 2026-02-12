@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Questionnaire from "./Questionnaire";
+import QuestionnairePage from "../pages/QuestionnairePage";
 import api from "./api";
 
 
