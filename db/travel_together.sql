@@ -1,84 +1,136 @@
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP TABLE IF EXISTS `Chat_Logs`;
+DROP TABLE IF EXISTS `Itinerary_Items`;
+DROP TABLE IF EXISTS `Itineraries`;
+DROP TABLE IF EXISTS `User_Map_Status`;
+DROP TABLE IF EXISTS `Destination_Tags`;
+DROP TABLE IF EXISTS `User_Preferences`;
+DROP TABLE IF EXISTS `Destinations`;
+DROP TABLE IF EXISTS `Tags`;
+DROP TABLE IF EXISTS `Users`;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- 1) USERS
 CREATE TABLE `Users` (
-  `id` integer PRIMARY KEY,
-  `username` varchar(255),
-  `email` varchar(255) UNIQUE,
-  `password_hash` varchar(255),
-  `created_at` timestamp
-);
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `username` VARCHAR(255) NOT NULL,
+  `email` VARCHAR(255) NOT NULL,
+  `password_hash` VARCHAR(255) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_users_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 2) TAGS
 CREATE TABLE `Tags` (
-  `id` integer PRIMARY KEY,
-  `name` varchar(255)
-);
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_tags_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE `User_Preferences` (
-  `id` integer PRIMARY KEY,
-  `user_id` integer,
-  `tag_id` integer,
-  `score` integer
-);
-
-CREATE TABLE `Destination_Tags` (
-  `destination_id` integer,
-  `tag_id` integer
-);
-
+-- 3) DESTINATIONS
 CREATE TABLE `Destinations` (
-  `id` integer PRIMARY KEY,
-  `name` varchar(255),
-  `country` varchar(255),
-  `description` text,
-  `latitude` float,
-  `longitude` float
-);
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(255) NOT NULL,
+  `country` VARCHAR(255) NOT NULL,
+  `description` TEXT NULL,
+  `latitude` DECIMAL(10,7) NULL,
+  `longitude` DECIMAL(10,7) NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_destinations_country` (`country`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 4) USER_PREFERENCES
+CREATE TABLE `User_Preferences` (
+  `user_id` INT NOT NULL,
+  `tag_id` INT NOT NULL,
+  `score` INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`user_id`, `tag_id`),
+  KEY `idx_user_preferences_tag` (`tag_id`),
+  CONSTRAINT `fk_user_preferences_user`
+    FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_user_preferences_tag`
+    FOREIGN KEY (`tag_id`) REFERENCES `Tags` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 5) DESTINATION_TAGS (M:N)
+CREATE TABLE `Destination_Tags` (
+  `destination_id` INT NOT NULL,
+  `tag_id` INT NOT NULL,
+  PRIMARY KEY (`destination_id`, `tag_id`),
+  KEY `idx_destination_tags_tag` (`tag_id`),
+  CONSTRAINT `fk_destination_tags_destination`
+    FOREIGN KEY (`destination_id`) REFERENCES `Destinations` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_destination_tags_tag`
+    FOREIGN KEY (`tag_id`) REFERENCES `Tags` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 6) USER_MAP_STATUS
 CREATE TABLE `User_Map_Status` (
-  `id` integer PRIMARY KEY,
-  `user_id` integer,
-  `destination_id` integer,
-  `status` varchar(255)
-);
+  `user_id` INT NOT NULL,
+  `destination_id` INT NOT NULL,
+  `status` VARCHAR(255) NOT NULL,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`, `destination_id`),
+  KEY `idx_user_map_status_destination` (`destination_id`),
+  CONSTRAINT `fk_user_map_status_user`
+    FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_user_map_status_destination`
+    FOREIGN KEY (`destination_id`) REFERENCES `Destinations` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 7) ITINERARIES
 CREATE TABLE `Itineraries` (
-  `id` integer PRIMARY KEY,
-  `user_id` integer,
-  `title` varchar(255),
-  `start_date` date,
-  `end_date` date
-);
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `user_id` INT NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `start_date` DATE NULL,
+  `end_date` DATE NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_itineraries_user` (`user_id`),
+  CONSTRAINT `fk_itineraries_user`
+    FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 8) ITINERARY_ITEMS
 CREATE TABLE `Itinerary_Items` (
-  `id` integer PRIMARY KEY,
-  `itinerary_id` integer,
-  `destination_id` integer,
-  `day_number` integer,
-  `order_index` integer
-);
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `itinerary_id` INT NOT NULL,
+  `destination_id` INT NOT NULL,
+  `day_number` INT NOT NULL DEFAULT 1,
+  `order_index` INT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_items_itinerary` (`itinerary_id`),
+  KEY `idx_items_destination` (`destination_id`),
+  CONSTRAINT `fk_items_itinerary`
+    FOREIGN KEY (`itinerary_id`) REFERENCES `Itineraries` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_items_destination`
+    FOREIGN KEY (`destination_id`) REFERENCES `Destinations` (`id`)
+    ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 9) CHAT_LOGS
 CREATE TABLE `Chat_Logs` (
-  `id` integer PRIMARY KEY,
-  `user_id` integer,
-  `message` text,
-  `response` text,
-  `timestamp` timestamp
-);
-
-ALTER TABLE `User_Preferences` ADD FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`);
-
-ALTER TABLE `User_Preferences` ADD FOREIGN KEY (`tag_id`) REFERENCES `Tags` (`id`);
-
-ALTER TABLE `Destination_Tags` ADD FOREIGN KEY (`destination_id`) REFERENCES `Destinations` (`id`);
-
-ALTER TABLE `Destination_Tags` ADD FOREIGN KEY (`tag_id`) REFERENCES `Tags` (`id`);
-
-ALTER TABLE `User_Map_Status` ADD FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`);
-
-ALTER TABLE `User_Map_Status` ADD FOREIGN KEY (`destination_id`) REFERENCES `Destinations` (`id`);
-
-ALTER TABLE `Itineraries` ADD FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`);
-
-ALTER TABLE `Itinerary_Items` ADD FOREIGN KEY (`itinerary_id`) REFERENCES `Itineraries` (`id`);
-
-ALTER TABLE `Itinerary_Items` ADD FOREIGN KEY (`destination_id`) REFERENCES `Destinations` (`id`);
-
-ALTER TABLE `Chat_Logs` ADD FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`);
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `user_id` INT NOT NULL,
+  `message` TEXT NOT NULL,
+  `response` TEXT NULL,
+  `timestamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_chat_logs_user` (`user_id`),
+  CONSTRAINT `fk_chat_logs_user`
+    FOREIGN KEY (`user_id`) REFERENCES `Users` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

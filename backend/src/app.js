@@ -1,8 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 
-const pool = require("./db"); // <-- adauga asta
-
+const pool = require("./db");
 const authRoutes = require("./routes/auth.routes");
 const questionnaireRoutes = require("./routes/questionnaire.routes");
 const recommendationsRoutes = require("./routes/recommendations.routes");
@@ -15,10 +14,10 @@ app.use(express.json());
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 
-app.get("/db-test", async (req, res) => {   // <-- adauga endpointul
+app.get("/db-test", async (req, res) => {
   try {
     const [rows] = await pool.query("SELECT 1 AS ok");
-    return res.json(rows[0]); // { ok: 1 }
+    return res.json(rows[0]); 
   } catch (e) {
     return res.status(500).json({
       code: e.code,

@@ -27,13 +27,14 @@ Aplicația a fost dezvoltată ca parte a lucrării de licență la **ASE – Fac
 
 ## 🖥 Backend
 
-- **PHP** (arhitectură **MVC**) – tehnologia oficială de implementare pentru backend
-- **PHP OOP** – modele, controlere, vizualizări
-- **Sistem propriu de recomandări personalizate** (content-based filtering)
+- **Node.js & Express** – mediul de rulare si framework-ul pentru server[cite: 972].
+- **JWT (JSON Web Tokens)** – securizarea rutelor si autentificarea utilizatorilor[cite: 532, 801].
+- **Bcrypt** – hashing pentru stocarea securizata a parolelor[cite: 801, 1746].
+- **Motor de recomandare** – algoritm de filtrare bazat pe continut (Content-based filtering)[cite: 120, 126].
 
 ## 🗄 Bază de date
 
-- **MySQL** – stocarea utilizatorilor, destinațiilor, preferințelor și recenziilor
+- **MySQL (XAMPP)** – stocarea utilizatorilor, destinațiilor, preferințelor și recenziilor
 - Interogări optimizate pentru CRUD
 
 ---
