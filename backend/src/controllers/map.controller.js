@@ -1,5 +1,4 @@
 const pool = require("../db");
-
 async function getMyMap(req, res) {
   const userId = req.user.id;
 

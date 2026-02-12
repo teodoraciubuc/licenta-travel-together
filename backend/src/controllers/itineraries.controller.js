@@ -1,5 +1,4 @@
 const pool = require("../db");
-
 async function createItinerary(req, res) {
   const userId = req.user.id;
   const { title, start_date, end_date } = req.body;
