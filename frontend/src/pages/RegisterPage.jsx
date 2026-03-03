@@ -103,7 +103,7 @@ export default function RegisterPage() {
 
             navigate("/questionnaire");
         } catch {
-            setErr("Nu pot ajunge la server. Verifica backend-ul si VITE_API_BASE.");
+            setErr("Eraoare backend-ul ");
         } finally {
             setLoading(false);
         }

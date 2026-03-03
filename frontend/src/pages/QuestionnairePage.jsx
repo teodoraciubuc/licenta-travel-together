@@ -4,9 +4,18 @@ import "../styles/Questionnaire.css";
 
 export default function QuestionnairePage() {
     const navigate = useNavigate();
-    const token = localStorage.getItem("token");
     const base = import.meta.env.VITE_API_BASE || "http://localhost:3001";
+    const tagMapping = {
+        "Orase mari": null,
+        "Orase istorice": 3,
+        "Statiuni la mare": 2,
+        "Munti": 1,
+        "Natura salbatica": null,
+        "Sate autentice": null,
+        "Insule": null,
+        "Destinatii exotice": null,
 
+    };
     // ================= SLIDER QUESTIONS =================
 
     const sliderQuestions = [
@@ -86,17 +95,7 @@ export default function QuestionnairePage() {
                 "Destinatii exotice",
             ],
         },
-        {
-            title: "Care este continentul tau preferat?",
-            options: [
-                "Europa",
-                "Asia",
-                "America de Nord",
-                "America de Sud",
-                "Africa",
-                "Australia & Oceania",
-            ],
-        },
+
     ];
 
     const totalSteps = 1 + tagQuestions.length;
@@ -133,25 +132,37 @@ export default function QuestionnairePage() {
     }
 
     async function handleFinish() {
-        if (!token) return;
+        const tokenNow = localStorage.getItem("token");
+        if (!tokenNow) {
+            alert("Nu esti logat.");
+            navigate("/login");
+            return;
+        }
 
-        const preferences = [];
+        const allSelected = Object.values(tagAnswers).flat();
 
-        Object.entries(sliderAnswers).forEach(([, value], index) => {
-            preferences.push({
-                tagId: index + 1,
-                score: value,
-            });
-        });
+        const preferences = allSelected
+            .map((name) => ({
+                tagId: tagMapping[name],
+                score: 5,
+            }))
+            .filter((p) => p.tagId);
 
-        await fetch(`${base}/api/questionnaire/preferences`, {
+        const response = await fetch(`${base}/api/questionnaire/preferences`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
+                Authorization: `Bearer ${tokenNow}`,
             },
             body: JSON.stringify({ preferences }),
         });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            console.log("Save failed:", response.status, err);
+            alert("Eroare la salvare");
+            return;
+        }
 
         navigate("/dashboard");
     }

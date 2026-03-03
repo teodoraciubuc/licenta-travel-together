@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import QuestionnairePage from "./pages/QuestionnairePage";
@@ -8,28 +8,9 @@ import ItinerariesPage from "./pages/ItinerariesPage";
 import DashboardPage from "./pages/DashboardPage";
 
 function Layout({ children }) {
-  const navigate = useNavigate();
-  const token = localStorage.getItem("token");
+  return <>{children}</>;
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
-
-  return (
-    <div style={{ fontFamily: "Arial", padding: 16 }}>
-      <nav style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 16 }}>
-        <Link to="/questionnaire">Questionnaire</Link>
-        <Link to="/recommendations">Recommendations</Link>
-        <Link to="/map">Map</Link>
-        <Link to="/itineraries">Itineraries</Link>
-        <span style={{ flex: 1 }} />
-        {token ? <button onClick={logout}>Logout</button> : <Link to="/login">Login</Link>}
-      </nav>
-      {children}
-    </div>
-  );
-}
+};
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem("token");

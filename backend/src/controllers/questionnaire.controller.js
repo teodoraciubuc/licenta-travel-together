@@ -12,9 +12,13 @@ async function getTags(req, res) {
     res.status(500).json({ message: "Database error" });
   }
 }
-
 async function savePreferences(req, res) {
-  const userId = req.user.userId; // din JWT
+  console.log("[SAVE PREF] userId:", req.user?.id);
+  console.log("SAVE PREF HIT:", {
+    user: req.user,
+    body: req.body
+  });
+  const userId = req.user.id; 
   const { preferences } = req.body;
 
   if (!Array.isArray(preferences)) {
@@ -22,13 +26,10 @@ async function savePreferences(req, res) {
   }
 
   try {
-    // Stergem preferintele vechi
     await pool.query(
       'DELETE FROM "User_Preferences" WHERE user_id = $1',
       [userId]
     );
-
-    // Inseram preferintele noi
     for (const p of preferences) {
       const tagId = Number(p.tagId);
       const score = Number(p.score);
@@ -41,10 +42,10 @@ async function savePreferences(req, res) {
       );
     }
 
-    res.json({ ok: true });
+    res.json({ message: "Preferences saved successfully"});
   } catch (err) {
     console.error("savePreferences error:", err);
-    res.status(500).json({ message: "Database error" });
+    res.status(500).json({ message: "Error saving preferences" });
   }
 }
 

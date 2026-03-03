@@ -77,9 +77,9 @@ export default function LoginPage() {
             }
 
             localStorage.setItem("token", data.token);
-            navigate("/map"); // sau /itineraries /dashboard cum ai tu
+            navigate("/dashboard");
         } catch {
-            setErr("Nu pot ajunge la server. Verifica backend-ul si VITE_API_BASE.");
+            setErr("Eroare la backend.");
         } finally {
             setLoading(false);
         }
