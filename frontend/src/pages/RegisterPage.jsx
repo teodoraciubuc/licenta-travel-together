@@ -75,10 +75,10 @@ export default function RegisterPage() {
         try {
             const base = import.meta.env.VITE_API_BASE || "http://localhost:3001";
 
-            const res = await fetch(`${base}/auth/register`, {
+            const res = await fetch(`${base}/api/auth/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ fullName, email, password }),
+                body: JSON.stringify({ username: fullName, email, password }),
             });
 
             const data = await res.json().catch(() => ({}));
@@ -88,7 +88,20 @@ export default function RegisterPage() {
                 return;
             }
 
-            navigate("/login");
+            const loginRes = await fetch(`${base}/api/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const loginData = await loginRes.json();
+            if (!loginRes.ok) {
+                setErr("Autentificare automata esuata.");
+                return;
+            }
+            localStorage.setItem("token", loginData.token);
+
+            navigate("/questionnaire");
         } catch {
             setErr("Nu pot ajunge la server. Verifica backend-ul si VITE_API_BASE.");
         } finally {

@@ -7,6 +7,7 @@ const questionnaireRoutes = require("./routes/questionnaire.routes");
 const recommendationsRoutes = require("./routes/recommendations.routes");
 const mapRoutes = require("./routes/map.routes");
 const itinerariesRoutes = require("./routes/itineraries.routes");
+const dashboardRoutes = require("./routes/dashboard.routes");
 
 const app = express();
 app.use(cors());
@@ -16,12 +17,12 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 
 app.get("/db-test", async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT 1 AS ok");
-    return res.json(rows[0]); 
+    const result = await pool.query("SELECT 1 AS ok");
+    return res.json(result.rows[0]); // { ok: 1 }
   } catch (e) {
     return res.status(500).json({
       code: e.code,
-      message: e.sqlMessage || e.message,
+      message: e.message,
     });
   }
 });
@@ -31,5 +32,6 @@ app.use("/api/questionnaire", questionnaireRoutes);
 app.use("/api/recommendations", recommendationsRoutes);
 app.use("/api/map", mapRoutes);
 app.use("/api/itineraries", itinerariesRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 module.exports = app;

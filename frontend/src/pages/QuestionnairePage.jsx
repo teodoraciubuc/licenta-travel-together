@@ -1,119 +1,257 @@
-import { useEffect, useState } from "react";
-import api from "../api/axios";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "../styles/Questionnaire.css";
 
+export default function QuestionnairePage() {
+    const navigate = useNavigate();
+    const token = localStorage.getItem("token");
+    const base = import.meta.env.VITE_API_BASE || "http://localhost:3001";
 
-export default function Questionnaire() {
-    const [tags, setTags] = useState([]);
-    const [scores, setScores] = useState({});
-    const [result, setResult] = useState(null);
+    // ================= SLIDER QUESTIONS =================
 
-    const reloadTags = async () => {
-        setResult(null);
-        try {
-            const res = await api.get("/api/questionnaire/tags");
-            const data = res.data;
+    const sliderQuestions = [
+        {
+            key: "pace",
+            title: "Cum arata ritmul tau ideal?",
+            left: "Relaxare totala",
+            right: "Actiune pura",
+        },
+        {
+            key: "atmosphere",
+            title: "Ce atmosfera preferi intr-o destinatie?",
+            left: "Liniste si retragere",
+            right: "Oras vibrant si energie urbana",
+        },
+        {
+            key: "social",
+            title: "Cat de social vrei sa fii in vacanta?",
+            left: "Intimitate / Izolare",
+            right: "Interactiune maxima",
+        },
+        {
+            key: "budget",
+            title: "Care este prioritatea bugetului tau?",
+            left: "Low-cost / Backpacking",
+            right: "Luxury / Premium",
+        },
+        {
+            key: "food",
+            title: "Cum preferi sa mananci in vacanta?",
+            left: "Street food local",
+            right: "Fine dining",
+        },
+        {
+            key: "frequency",
+            title: "Cat de des calatoresti?",
+            left: "Rar",
+            right: "Foarte des",
+        },
+        {
+            key: "planning",
+            title: "Cum abordezi planificarea?",
+            left: "Totul programat",
+            right: "Spontan",
+        },
+        {
+            key: "comfort",
+            title: "Cat de important este confortul pentru tine?",
+            left: "Minimal",
+            right: "Confort ridicat",
+        },
+        {
+            key: "distance",
+            title: "Cat de departe esti dispus sa calatoresti?",
+            left: "Aproape",
+            right: "Oriunde in lume",
+        },
+        {
+            key: "experience",
+            title: "Ce tip de experiente cauti?",
+            left: "Relaxare",
+            right: "Adrenalina",
+        },
+    ];
 
-            setTags(data);
+    const tagQuestions = [
+        {
+            title: "Ce tip de destinatii te atrag?",
+            options: [
+                "Orase mari",
+                "Orase istorice",
+                "Statiuni la mare",
+                "Munti",
+                "Natura salbatica",
+                "Sate autentice",
+                "Insule",
+                "Destinatii exotice",
+            ],
+        },
+        {
+            title: "Care este continentul tau preferat?",
+            options: [
+                "Europa",
+                "Asia",
+                "America de Nord",
+                "America de Sud",
+                "Africa",
+                "Australia & Oceania",
+            ],
+        },
+    ];
 
-            setScores((prev) => {
-                const next = { ...prev };
-                data.forEach((t) => {
-                    if (next[t.id] === undefined) next[t.id] = 0;
-                });
-                return next;
+    const totalSteps = 1 + tagQuestions.length;
+
+    const [currentStep, setCurrentStep] = useState(1);
+    const [cardIndex, setCardIndex] = useState(0);
+
+    const [sliderAnswers, setSliderAnswers] = useState(
+        sliderQuestions.reduce((acc, q) => {
+            acc[q.key] = 3;
+            return acc;
+        }, {})
+    );
+
+    const [tagAnswers, setTagAnswers] = useState({});
+
+    function handleSliderChange(e) {
+        setSliderAnswers({
+            ...sliderAnswers,
+            [e.target.name]: Number(e.target.value),
+        });
+    }
+
+    function toggleTag(option) {
+        setTagAnswers((prev) => {
+            const current = prev[cardIndex] || [];
+            return {
+                ...prev,
+                [cardIndex]: current.includes(option)
+                    ? current.filter((o) => o !== option)
+                    : [...current, option],
+            };
+        });
+    }
+
+    async function handleFinish() {
+        if (!token) return;
+
+        const preferences = [];
+
+        Object.entries(sliderAnswers).forEach(([, value], index) => {
+            preferences.push({
+                tagId: index + 1,
+                score: value,
             });
-        } catch (err) {
-            setResult({
-                ok: false,
-                status: err.response?.status,
-                data: err.response?.data || err.message,
-            });
+        });
+
+        await fetch(`${base}/api/questionnaire/preferences`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ preferences }),
+        });
+
+        navigate("/dashboard");
+    }
+
+    function handleNext() {
+        if (currentStep === 1) {
+            setCurrentStep(2);
+            return;
         }
-    };
 
-    useEffect(() => {
-        let mounted = true;
-
-        (async () => {
-            try {
-                const res = await api.get("/api/questionnaire/tags");
-                if (!mounted) return;
-
-                const data = res.data;
-                setTags(data);
-
-                const init = {};
-                data.forEach((t) => (init[t.id] = 0));
-                setScores(init);
-            } catch (err) {
-                if (!mounted) return;
-                setResult({
-                    ok: false,
-                    status: err.response?.status,
-                    data: err.response?.data || err.message,
-                });
-            }
-        })();
-
-        return () => {
-            mounted = false;
-        };
-    }, []);
-
-    const savePreferences = async () => {
-        setResult(null);
-        try {
-            const preferences = Object.entries(scores).map(([tagId, score]) => ({
-                tagId: Number(tagId),
-                score: Number(score),
-            }));
-
-            const res = await api.post("/api/questionnaire/preferences", { preferences });
-            setResult({ ok: true, data: res.data });
-        } catch (err) {
-            setResult({
-                ok: false,
-                status: err.response?.status,
-                data: err.response?.data || err.message,
-            });
+        if (cardIndex < tagQuestions.length - 1) {
+            setCardIndex(cardIndex + 1);
+            setCurrentStep(currentStep + 1);
+        } else {
+            handleFinish();
         }
-    };
+    }
+
+    function renderContent() {
+        if (currentStep === 1) {
+            return (
+                <>
+                    <h2>Customize your travel style</h2>
+
+                    {sliderQuestions.map((q) => (
+                        <div key={q.key} className="slider-group">
+                            <label>{q.title}</label>
+
+                            <input
+                                type="range"
+                                min="1"
+                                max="5"
+                                name={q.key}
+                                value={sliderAnswers[q.key]}
+                                onChange={handleSliderChange}
+                            />
+
+                            <div className="slider-labels">
+                                <span>{q.left}</span>
+                                <span>{q.right}</span>
+                            </div>
+                        </div>
+                    ))}
+                </>
+            );
+        }
+
+        const current = tagQuestions[cardIndex];
+
+        return (
+            <>
+                <h2>{current.title}</h2>
+
+                <div className="tags">
+                    {current.options.map((opt) => (
+                        <button
+                            key={opt}
+                            className={`tag ${(tagAnswers[cardIndex] || []).includes(opt)
+                                ? "active"
+                                : ""
+                                }`}
+                            onClick={() => toggleTag(opt)}
+                        >
+                            {opt}
+                        </button>
+                    ))}
+                </div>
+            </>
+        );
+    }
 
     return (
-        <div style={{ padding: 16, fontFamily: "Arial" }}>
-            <h2>Questionnaire</h2>
-
-            <button onClick={reloadTags}>Reload tags</button>
-
-            <div style={{ marginTop: 16, display: "grid", gap: 10, maxWidth: 420 }}>
-                {tags.map((t) => (
-                    <div key={t.id} style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                        <div>
-                            <b>{t.name}</b> <span style={{ opacity: 0.6 }}>#{t.id}</span>
-                        </div>
-
-                        <select
-                            value={scores[t.id] ?? 0}
-                            onChange={(e) => setScores((prev) => ({ ...prev, [t.id]: e.target.value }))}
-                        >
-                            <option value={0}>0</option>
-                            <option value={1}>1</option>
-                            <option value={2}>2</option>
-                            <option value={3}>3</option>
-                            <option value={4}>4</option>
-                            <option value={5}>5</option>
-                        </select>
-                    </div>
-                ))}
+        <div className="q-wrapper">
+            <div className="q-header">
+                <div className="q-logo">✈ Travel Together</div>
+                <div className="q-progress-text">
+                    Page {currentStep} of {totalSteps}
+                </div>
             </div>
 
-            <button onClick={savePreferences} style={{ marginTop: 16 }}>
-                Save preferences
-            </button>
+            <div className="q-progress-bar-container">
+                <div
+                    className="q-progress-bar"
+                    style={{
+                        width: `${(currentStep / totalSteps) * 100}%`,
+                    }}
+                />
+            </div>
 
-            <pre style={{ marginTop: 16, background: "#f5f5f5", padding: 12 }}>
-                {result ? JSON.stringify(result, null, 2) : "No result yet"}
-            </pre>
+            <div className="q-content">
+                <div className="q-card">
+                    {renderContent()}
+                </div>
+            </div>
+
+            <div className="q-footer">
+                <button className="q-next-btn" onClick={handleNext}>
+                    {currentStep === totalSteps ? "Finish" : "Next"}
+                </button>
+            </div>
         </div>
     );
 }

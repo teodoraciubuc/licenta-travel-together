@@ -5,6 +5,7 @@ import QuestionnairePage from "./pages/QuestionnairePage";
 import RecommendationsPage from "./pages/RecommendationsPage";
 import MapPage from "./pages/MapPage";
 import ItinerariesPage from "./pages/ItinerariesPage";
+import DashboardPage from "./pages/DashboardPage";
 
 function Layout({ children }) {
   const navigate = useNavigate();
@@ -37,14 +38,14 @@ function PrivateRoute({ children }) {
 }
 
 export default function App() {
+  const token = localStorage.getItem("token");
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-
-        {/* IMPORTANT: fara Layout aici */}
+        <Route path="/" element={<Navigate to={token ? "/dashboard" : "/login"} replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+
 
         <Route
           path="/questionnaire"
@@ -89,7 +90,18 @@ export default function App() {
             </Layout>
           }
         />
+        <Route
+          path="/dashboard"
+          element={
+            <Layout>
+              <PrivateRoute>
+                <DashboardPage />
+              </PrivateRoute>
+            </Layout>
+          }
+        />
       </Routes>
     </BrowserRouter>
+
   );
 }

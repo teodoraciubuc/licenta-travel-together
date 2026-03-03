@@ -1,0 +1,178 @@
+/* ================= GLOBAL WRAPPER ================= */
+
+.q-wrapper {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0b1320, #0f1a2d);
+    display: flex;
+    flex-direction: column;
+    color: white;
+}
+
+/* ================= HEADER ================= */
+
+.q-header {
+    height: 70px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.q-logo {
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.q-progress-text {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+/* ================= PROGRESS BAR ================= */
+
+.q-progress-bar-container {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    width: 100%;
+}
+
+.q-progress-bar {
+    height: 4px;
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
+    transition: width 0.4s ease;
+}
+
+/* ================= CONTENT CENTER ================= */
+
+.q-content {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ================= CARD ================= */
+
+.q-card {
+    width: 700px;
+    min-height: 350px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border-radius: 28px;
+    padding: 50px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    text-align: center;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.q-card h2 {
+    font-size: 24px;
+    margin-bottom: 30px;
+    font-weight: 600;
+}
+
+/* ================= SLIDER ================= */
+
+.slider-group {
+    margin-bottom: 30px;
+    text-align: left;
+}
+
+.slider-group label {
+    font-size: 14px;
+    opacity: 0.8;
+    margin-bottom: 10px;
+    display: block;
+}
+
+input[type="range"] {
+    width: 100%;
+    accent-color: #00c6ff;
+}
+
+/* ================= TAGS ================= */
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 10px;
+}
+
+.tag {
+    padding: 10px 18px;
+    border-radius: 50px;
+    background: rgba(134, 119, 193, 0.477);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: 0.25s ease;
+    font-size: 14px;
+}
+
+.tag:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+/* SELECTED STATE */
+
+.tag.active {
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
+    color: white;
+    border: none;
+    box-shadow: 0 0 0 3px rgba(0, 198, 255, 0.25);
+}
+
+/* ================= FLOATING BUTTON ================= */
+
+.q-footer {
+    height: 90px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 60px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.q-next-btn {
+    background: linear-gradient(135deg, #00c6ff, #0072ff);
+    border: none;
+    padding: 14px 32px;
+    border-radius: 30px;
+    font-size: 15px;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(0, 114, 255, 0.4);
+    transition: 0.3s ease;
+}
+
+.q-next-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(0, 114, 255, 0.6);
+}
+
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 8px;
+    font-size: 13px;
+    color: #a0aabf;
+}
