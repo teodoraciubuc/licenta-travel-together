@@ -55,18 +55,123 @@ const EUROPEAN_COUNTRIES = {
   VA: "Vatican City",
 };
 
+// Tag IDs (matches DB):
+// 1=Munte, 2=Plaja/Litoral, 3=Oras istoric, 4=Natura/Parcuri, 5=Lacuri/Cascade
+// 6=Soare si caldura, 7=Zapada si iarna, 8=Clima temperata, 9=Vizitare muzee
+// 10=Drumetii/Hiking, 11=Shopping, 12=Gastronomie, 13=Sporturi de apa, 14=Viata de noapte
+
+// Tari montane
+const MOUNTAIN_COUNTRIES = new Set(["AT", "CH", "LI", "AD", "SI", "SK"]);
+
+// Tari cu litoral relevant
+const COASTAL_COUNTRIES = new Set(["HR", "GR", "ES", "IT", "PT", "MT", "CY", "ME", "AL", "MC", "FR", "TR"]);
+
+// Tari nordice/scandinave
+const NORDIC_COUNTRIES = new Set(["NO", "SE", "FI", "IS", "DK"]);
+
+// Tari cu climat cald
+const WARM_COUNTRIES = new Set(["ES", "IT", "GR", "PT", "CY", "MT", "TR", "MC"]);
+
+// Tari cu clima temperata predominant
+const TEMPERATE_COUNTRIES = new Set(["DE", "FR", "GB", "BE", "NL", "LU", "CZ", "HU", "PL", "SK", "RO", "BG", "RS", "BA", "MK", "MD", "UA", "BY", "RU", "LT", "LV", "EE", "IE"]);
+
+// Tari cu gastronomie recunoscuta
+const GASTRONOMY_COUNTRIES = new Set(["FR", "IT", "ES", "PT", "GR"]);
+
+// Orase mari (populatie > 500000) → shopping + viata de noapte
+// Orase istorice cunoscute
+const HISTORIC_CITIES = new Set([
+  "Rome", "Roma", "Athens", "Athinai", "Prague", "Praha", "Vienna", "Wien",
+  "Budapest", "Krakow", "Krakow", "Dubrovnik", "Florence", "Firenze",
+  "Venice", "Venezia", "Lisbon", "Lisboa", "Seville", "Sevilla",
+  "Bruges", "Tallinn", "Riga", "Vilnius", "Valletta", "Edinburgh",
+  "Ghent", "Siena", "Kotor", "Plovdiv", "Ohrid", "Mostar", "Brasov",
+  "Sinaia", "Sibiu", "Cluj-Napoca", "Sarajevo"
+]);
+
+function assignTags(city) {
+  const cc = city.country_code;
+  const name = city.name;
+  const pop = city.population || 0;
+  const lat = city.lat;
+
+  const tags = new Set();
+
+  // Munte
+  if (MOUNTAIN_COUNTRIES.has(cc)) tags.add(1);
+  if (["NO", "IS", "AL", "BA", "ME", "MK", "RO", "BG"].includes(cc)) tags.add(1);
+
+  // Plaja / Litoral
+  if (COASTAL_COUNTRIES.has(cc)) tags.add(2);
+
+  // Oras istoric
+  if (HISTORIC_CITIES.has(name)) tags.add(3);
+
+  // Natura / Parcuri nationale
+  if (NORDIC_COUNTRIES.has(cc)) tags.add(4);
+  if (MOUNTAIN_COUNTRIES.has(cc)) tags.add(4);
+  if (["IS", "IE", "RO", "BG", "BA", "AL"].includes(cc)) tags.add(4);
+
+  // Lacuri / Cascade
+  if (["CH", "AT", "NO", "FI", "SE", "IS", "SI", "IT"].includes(cc)) tags.add(5);
+
+  // Soare si caldura
+  if (WARM_COUNTRIES.has(cc)) tags.add(6);
+  if (lat < 45 && COASTAL_COUNTRIES.has(cc)) tags.add(6);
+
+  // Zapada si iarna
+  if (MOUNTAIN_COUNTRIES.has(cc)) tags.add(7);
+  if (NORDIC_COUNTRIES.has(cc)) tags.add(7);
+  if (["RU", "BY", "UA", "PL", "CZ", "SK", "RO", "BG"].includes(cc) && lat > 50) tags.add(7);
+
+  // Clima temperata
+  if (TEMPERATE_COUNTRIES.has(cc) && !WARM_COUNTRIES.has(cc)) tags.add(8);
+
+  // Vizitare muzee (orase mari sau istorice)
+  if (pop > 300000 || HISTORIC_CITIES.has(name)) tags.add(9);
+
+  // Drumetii / Hiking
+  if (MOUNTAIN_COUNTRIES.has(cc)) tags.add(10);
+  if (NORDIC_COUNTRIES.has(cc)) tags.add(10);
+  if (["IS", "IE", "RO", "BA", "AL", "ME", "MK"].includes(cc)) tags.add(10);
+
+  // Shopping (orase mari)
+  if (pop > 500000) tags.add(11);
+
+  // Gastronomie
+  if (GASTRONOMY_COUNTRIES.has(cc)) tags.add(12);
+
+  // Sporturi de apa
+  if (COASTAL_COUNTRIES.has(cc)) tags.add(13);
+  if (["FI", "SE", "NO", "IS"].includes(cc)) tags.add(13);
+
+  // Viata de noapte (orase mari)
+  if (pop > 400000) tags.add(14);
+
+  const tagArray = [...tags];
+
+  // Fiecare oras trebuie sa aiba exact 3 taguri
+  if (tagArray.length >= 3) {
+    // Alege primele 3 cele mai relevante (ordinea din Set e ordinea insertiei = prioritate)
+    return tagArray.slice(0, 3);
+  }
+
+  // Daca are mai putin de 3 taguri, completeaza cu fallback-uri logice
+  const fallbacks = [8, 3, 9, 4, 11]; // clima temperata, oras istoric, muzee, natura, shopping
+  for (const fb of fallbacks) {
+    if (tagArray.length >= 3) break;
+    if (!tags.has(fb)) {
+      tagArray.push(fb);
+      tags.add(fb);
+    }
+  }
+
+  return tagArray.slice(0, 3);
+}
+
 function safeNum(x) {
   const n = Number(x);
   return Number.isFinite(n) ? n : null;
-}
-
-function pick3Unique(arr) {
-  const picked = new Set();
-  while (picked.size < 3) {
-    const idx = Math.floor(Math.random() * arr.length);
-    picked.add(arr[idx]);
-  }
-  return [...picked];
 }
 
 async function main() {
@@ -77,13 +182,6 @@ async function main() {
 
   await query(`DELETE FROM "Destination_Tags"`);
   await query(`DELETE FROM "Destinations"`);
-
-  const tagRows = await query(`SELECT id FROM "Tags" ORDER BY id`);
-  const tagIds = tagRows.rows.map((r) => r.id);
-
-  if (tagIds.length < 3) {
-    throw new Error(`Ai doar ${tagIds.length} tag-uri in tabela "Tags". Trebuie minim 3.`);
-  }
 
   const fileStream = fs.createReadStream(FILE, { encoding: "utf8" });
   const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
@@ -152,7 +250,7 @@ async function main() {
     );
 
     const cityId = res.rows[0].id;
-    const tags = pick3Unique(tagIds);
+    const tags = assignTags(city);
 
     for (const tagId of tags) {
       await query(
@@ -164,7 +262,7 @@ async function main() {
     saved++;
   }
 
-  console.log(`Salvate ${saved} orase.`);
+  console.log(`Salvate ${saved} orase cu taguri geografice.`);
   process.exit(0);
 }
 

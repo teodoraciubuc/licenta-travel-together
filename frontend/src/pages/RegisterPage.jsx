@@ -53,7 +53,7 @@ export default function RegisterPage() {
     useEffect(() => {
         const t = setInterval(() => {
             setSlideIndex((i) => (i + 1) % images.length);
-        }, 5000);
+        }, 3000);
         return () => clearInterval(t);
     }, [images.length]);
 

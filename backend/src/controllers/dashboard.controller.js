@@ -10,10 +10,7 @@ async function getDashboard(req, res) {
 
     const offset = parseInt(req.query.offset || 0, 10);
     const limit = 6;
-
-    const { rows: tagCountRows } = await pool.query('SELECT COUNT(*) AS total_tags FROM "Tags"');
-    const totalSystemTags = parseInt(tagCountRows[0]?.total_tags || 1, 10);
-    const maxPossibleSystemScore = totalSystemTags * 5; 
+    const MAX_SCORE = 15; // 3 taguri x nota maxima 5
 
     const { rows: prefRows } = await pool.query(
       'SELECT COUNT(*) AS cnt FROM "User_Preferences" WHERE user_id = $1',
@@ -48,7 +45,10 @@ async function getDashboard(req, res) {
       `SELECT
          d.id,
          d.name,
+         d.country,
          d.country_en,
+         d.latitude,
+         d.longitude,
          d.image_url,
          COALESCE(SUM(up.score), 0) AS raw_score
        FROM "Destinations" d
@@ -56,7 +56,7 @@ async function getDashboard(req, res) {
        LEFT JOIN "User_Preferences" up
          ON up.tag_id = dt.tag_id AND up.user_id = $1
        GROUP BY
-         d.id, d.name, d.country_en, d.image_url
+         d.id, d.name, d.country, d.country_en, d.latitude, d.longitude, d.image_url
        HAVING COALESCE(SUM(up.score), 0) > 0
        ORDER BY raw_score DESC, d.id ASC
        LIMIT $2 OFFSET $3`,
@@ -65,16 +65,17 @@ async function getDashboard(req, res) {
 
     const recommendations = recsRes.rows.map(dest => {
       const rawScore = parseFloat(dest.raw_score);
-      let matchPercentage = Math.round((rawScore / maxPossibleSystemScore) * 100);
-
-      if (matchPercentage > 100) matchPercentage = 100;
+      const finalScore = Math.min(Math.round((rawScore / MAX_SCORE) * 100), 100);
 
       return {
         id: dest.id,
         name: dest.name,
+        country: dest.country,
         country_en: dest.country_en,
+        latitude: dest.latitude,
+        longitude: dest.longitude,
         image_url: dest.image_url,
-        match_percentage: matchPercentage
+        final_score: finalScore,
       };
     });
 
@@ -86,7 +87,7 @@ async function getDashboard(req, res) {
       mapCounts,
       itinerariesCount,
       recentItineraries: recentIts,
-      recommendations: recommendations,
+      recommendations,
     });
   } catch (error) {
     console.error("Dashboard error:", error);

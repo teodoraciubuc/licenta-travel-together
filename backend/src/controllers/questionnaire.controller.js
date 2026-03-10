@@ -5,20 +5,20 @@ async function getTags(req, res) {
     const result = await pool.query(
       'SELECT id, name FROM "Tags" ORDER BY name'
     );
-
     res.json(result.rows);
   } catch (err) {
     console.error("getTags error:", err);
     res.status(500).json({ message: "Database error" });
   }
 }
+
 async function savePreferences(req, res) {
   console.log("[SAVE PREF] userId:", req.user?.id);
   console.log("SAVE PREF HIT:", {
     user: req.user,
     body: req.body
   });
-  const userId = req.user.id; 
+  const userId = req.user.id;
   const { preferences } = req.body;
 
   if (!Array.isArray(preferences)) {
@@ -42,11 +42,26 @@ async function savePreferences(req, res) {
       );
     }
 
-    res.json({ message: "Preferences saved successfully"});
+    res.json({ message: "Preferences saved successfully" });
   } catch (err) {
     console.error("savePreferences error:", err);
     res.status(500).json({ message: "Error saving preferences" });
   }
 }
 
-module.exports = { getTags, savePreferences };
+async function getPreferences(req, res) {
+  const userId = req.user.id;
+  try {
+    const { rows } = await pool.query(
+      'SELECT tag_id, score FROM "User_Preferences" WHERE user_id = $1',
+      [userId]
+    );
+    res.json({ preferences: rows });
+  } catch (err) {
+    console.error("getPreferences error:", err);
+    res.status(500).json({ message: "Database error" });
+  }
+}
+
+module.exports = { getTags, savePreferences, getPreferences };
+

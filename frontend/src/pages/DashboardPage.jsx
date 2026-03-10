@@ -117,7 +117,7 @@ const DashboardPage = () => {
                                             <strong>Location:</strong> {dest.country_en}
                                         </p>
                                         <p className="match-score">
-                                            Match Score: {dest.match_percentage}%
+                                            Match Score: {dest.final_score}%
                                         </p>
                                         <button className="btn-primary" onClick={() => navigate('/map')}>
                                             View on Map

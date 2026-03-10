@@ -5,18 +5,23 @@ import "../styles/Questionnaire.css";
 export default function QuestionnairePage() {
     const navigate = useNavigate();
     const base = import.meta.env.VITE_API_BASE || "http://localhost:3001";
-    const tagMapping = {
-        "Orase mari": null,
-        "Orase istorice": 3,
-        "Statiuni la mare": 2,
-        "Munti": 1,
-        "Natura salbatica": null,
-        "Sate autentice": null,
-        "Insule": null,
-        "Destinatii exotice": null,
 
+    const tagMapping = {
+        "Munte": 1,
+        "Plaja / Litoral": 2,
+        "Oras istoric": 3,
+        "Natura / Parcuri nationale": 4,
+        "Lacuri / Cascade": 5,
+        "Soare si caldura": 6,
+        "Zapada si iarna": 7,
+        "Clima temperata": 8,
+        "Vizitare muzee": 9,
+        "Drumetii / Hiking": 10,
+        "Shopping": 11,
+        "Gastronomie": 12,
+        "Sporturi de apa": 13,
+        "Viata de noapte / Clubbing": 14,
     };
-    // ================= SLIDER QUESTIONS =================
 
     const sliderQuestions = [
         {
@@ -84,18 +89,8 @@ export default function QuestionnairePage() {
     const tagQuestions = [
         {
             title: "Ce tip de destinatii te atrag?",
-            options: [
-                "Orase mari",
-                "Orase istorice",
-                "Statiuni la mare",
-                "Munti",
-                "Natura salbatica",
-                "Sate autentice",
-                "Insule",
-                "Destinatii exotice",
-            ],
+            options: Object.keys(tagMapping),
         },
-
     ];
 
     const totalSteps = 1 + tagQuestions.length;
@@ -131,6 +126,23 @@ export default function QuestionnairePage() {
         });
     }
 
+    const tagScoreMap = {
+        1: sliderAnswers.experience,
+        2: sliderAnswers.pace === 1 ? 5 : 6 - sliderAnswers.pace,
+        3: sliderAnswers.atmosphere,
+        4: sliderAnswers.experience,
+        5: sliderAnswers.experience,
+        6: Math.round((sliderAnswers.pace + sliderAnswers.comfort) / 2),
+        7: sliderAnswers.experience,
+        8: sliderAnswers.comfort,
+        9: 6 - sliderAnswers.experience,
+        10: sliderAnswers.experience,
+        11: sliderAnswers.budget,
+        12: sliderAnswers.food,
+        13: sliderAnswers.experience,
+        14: sliderAnswers.social,
+    };
+
     async function handleFinish() {
         const tokenNow = localStorage.getItem("token");
         if (!tokenNow) {
@@ -142,10 +154,11 @@ export default function QuestionnairePage() {
         const allSelected = Object.values(tagAnswers).flat();
 
         const preferences = allSelected
-            .map((name) => ({
-                tagId: tagMapping[name],
-                score: 5,
-            }))
+            .map((name) => {
+                const tagId = tagMapping[name];
+                const score = tagScoreMap[tagId] || 3;
+                return { tagId, score };
+            })
             .filter((p) => p.tagId);
 
         const response = await fetch(`${base}/api/questionnaire/preferences`, {

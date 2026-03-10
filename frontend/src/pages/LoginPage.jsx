@@ -53,7 +53,7 @@ export default function LoginPage() {
     useEffect(() => {
         const t = setInterval(() => {
             setSlideIndex((i) => (i + 1) % images.length);
-        }, 5000);
+        }, 3000);
         return () => clearInterval(t);
     }, [images.length]);
 
@@ -77,6 +77,7 @@ export default function LoginPage() {
             }
 
             localStorage.setItem("token", data.token);
+            localStorage.setItem("user_name", data.username || "Calatorule");
             navigate("/dashboard");
         } catch {
             setErr("Eroare la backend.");

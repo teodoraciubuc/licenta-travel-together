@@ -27,8 +27,10 @@ async function login(req, res) {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ message: "email and password required" });
-
-    const q = await pool.query('SELECT id, password_hash FROM "Users" WHERE email = $1', [email]);
+    const q = await pool.query(
+      'SELECT id, password_hash, username FROM "Users" WHERE email = $1',
+      [email]
+    );
     if (!q.rows.length) return res.status(401).json({ message: "Invalid credentials" });
 
     const ok = await bcrypt.compare(password, q.rows[0].password_hash);
@@ -38,7 +40,7 @@ async function login(req, res) {
       expiresIn: process.env.JWT_EXPIRES_IN || "7d",
     });
 
-    return res.json({ token });
+    return res.json({ token, username: q.rows[0].username });
   } catch (e) {
     return res.status(500).json({ message: e.message });
   }
