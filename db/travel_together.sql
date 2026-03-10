@@ -27,14 +27,30 @@ CREATE TABLE "Tags" (
 );
 
 -- 3) DESTINATIONS
+-- 3) DESTINATIONS
 CREATE TABLE "Destinations" (
   "id" SERIAL PRIMARY KEY,
   "name" VARCHAR(255) NOT NULL,
   "country" VARCHAR(255) NOT NULL,
   "description" TEXT NULL,
   "latitude" DECIMAL(10,7) NULL,
-  "longitude" DECIMAL(10,7) NULL
+  "longitude" DECIMAL(10,7) NULL,
+
+  -- pentru seed_opentripmap.mjs
+  "source" VARCHAR(50) NULL,
+  "source_id" VARCHAR(100) NULL,
+  "kinds" TEXT NULL,
+  "otm_rate" INT NULL DEFAULT 0,
+
+  -- pentru enrich_destinations_en.mjs
+  "country_en" TEXT NULL,
+  "description_en" TEXT NULL
 );
+
+-- necesar pentru ON CONFLICT (source, source_id)
+CREATE UNIQUE INDEX "uq_destinations_source_sourceid"
+  ON "Destinations" ("source", "source_id");
+
 CREATE INDEX "idx_destinations_country" ON "Destinations" ("country");
 
 -- 4) USER_PREFERENCES

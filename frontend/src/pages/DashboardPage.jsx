@@ -1,42 +1,56 @@
 import React from 'react';
-import { useNavigate, NavLink } from 'react-router-dom';
+import { useNavigate, NavLink, Link } from 'react-router-dom';
 import '../styles/Dashboard.css';
 
 const DashboardPage = () => {
     const navigate = useNavigate();
     const [recommendations, setRecommendations] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
+    const [offset, setOffset] = React.useState(0);
+    const userName = localStorage.getItem('user_name') || 'Călătorule';
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
+        localStorage.clear();
         navigate('/login');
     };
 
-    React.useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const response = await fetch('http://localhost:3001/api/dashboard', {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                    },
-                });
+    const fetchDashboardData = async (currentOffset) => {
+        setLoading(true);
+        try {
+            const response = await fetch(`http://localhost:3001/api/dashboard?offset=${currentOffset}`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                },
+            });
 
-                if (!response.ok) {
-                    throw new Error('Eroare la preluarea datelor');
-                }
+            if (!response.ok) throw new Error('Eroare');
 
-                const data = await response.json();
-                setRecommendations(data.recommendations || []);
-            } catch (error) {
-                console.error('Error fetching recommendations:', error);
-                setRecommendations([]);
-            } finally {
+            const data = await response.json();
+            const newRecs = data.recommendations || [];
+
+            if (newRecs.length === 0 && currentOffset > 0) {
+                alert("Ai parcurs toate recomandările disponibile!");
                 setLoading(false);
+                return;
             }
-        };
 
-        fetchDashboardData();
+            setRecommendations(newRecs);
+            setOffset(currentOffset);
+        } catch (error) {
+            console.error('Error:', error);
+            setRecommendations([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchDashboardData(0);
     }, []);
+
+    const handleRefresh = () => {
+        fetchDashboardData(offset + 6);
+    };
 
     return (
         <div className="dashboard-container">
@@ -46,27 +60,15 @@ const DashboardPage = () => {
                 </div>
 
                 <nav className="nav-menu">
-                    <NavLink
-                        to="/dashboard"
-                        className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
-                    >
+                    <NavLink to="/dashboard" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
                         Dashboard
                     </NavLink>
-
-                    <NavLink
-                        to="/map"
-                        className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
-                    >
+                    <NavLink to="/map" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
                         My Map
                     </NavLink>
-
-                    <NavLink
-                        to="/profile"
-                        className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
-                    >
+                    <NavLink to="/profile" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>
                         Profile
                     </NavLink>
-
                     <span className="nav-item logout" onClick={handleLogout}>
                         Logout
                     </span>
@@ -75,7 +77,7 @@ const DashboardPage = () => {
 
             <main className="dashboard-main">
                 <section className="hero-section">
-                    <h1>Unlock Europe</h1>
+                    <h1>Bună, {userName}!</h1>
                     <p>Pick a spot. Let’s fill the map together!!</p>
                 </section>
 
@@ -90,30 +92,49 @@ const DashboardPage = () => {
 
                     <div className="offers-grid">
                         {loading ? (
-                            <p>Loading your personalized trips...</p>
+                            <p>Loading...</p>
                         ) : recommendations.length === 0 ? (
-                            <p>No recommendations available yet.</p>
+                            <div className="no-recommendations">
+                                <p>No recommendations available yet.</p>
+                                <Link to="/questionnaire" className="btn-secondary">
+                                    Go to Questionnaire!
+                                </Link>
+                            </div>
                         ) : (
-                            recommendations.map((dest) => {
-                                const safeDescription =
-                                    dest.description || 'A destination matched to your travel preferences.';
-
-                                const shortDescription =
-                                    safeDescription.length > 140
-                                        ? safeDescription.slice(0, 140) + '...'
-                                        : safeDescription;
-
-                                return (
-                                    <div key={dest.id} className="offer-card">
-                                        <h4>{dest.name}</h4>
-                                        <p>Location: {dest.country}</p>
-                                        <p className="description">{shortDescription}</p>
-                                        <button className="btn-primary">View Details</button>
+                            recommendations.map((dest) => (
+                                <div key={dest.id} className="offer-card">
+                                    <div className="card-image-container">
+                                        {dest.image_url ? (
+                                            <img src={dest.image_url} alt={dest.name} className="city-image" />
+                                        ) : (
+                                            <div className="image-placeholder">No Image Available</div>
+                                        )}
                                     </div>
-                                );
-                            })
+
+                                    <div className="card-content">
+                                        <h4>{dest.name}</h4>
+                                        <p className="location-text">
+                                            <strong>Location:</strong> {dest.country_en}
+                                        </p>
+                                        <p className="match-score">
+                                            Match Score: {dest.match_percentage}%
+                                        </p>
+                                        <button className="btn-primary" onClick={() => navigate('/map')}>
+                                            View on Map
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
                         )}
                     </div>
+
+                    {!loading && recommendations.length > 0 && (
+                        <div className="refresh-container">
+                            <button className="btn-refresh" onClick={handleRefresh}>
+                                <span>🔄</span> Show next 6 spots
+                            </button>
+                        </div>
+                    )}
                 </section>
             </main>
         </div>

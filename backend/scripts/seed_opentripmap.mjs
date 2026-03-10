@@ -9,7 +9,6 @@ if (!API_KEY) {
 }
 
 const BASE = "https://api.opentripmap.com/0.1/en";
-
 const CITIES = [
   "Paris",
   "Rome",
@@ -21,33 +20,26 @@ const CITIES = [
   "Berlin",
   "Lisbon",
   "Athens",
-  // Orașe Culturale & Istorice
-  "Madrid", 
-  "Florence", 
-  "Venice", 
-  "Krakow", 
-  "Edinburgh", 
+  "Madrid",
+  "Florence",
+  "Venice",
+  "Krakow",
+  "Edinburgh",
   "Seville",
-
-  // Destinații de Coastă / Plajă
-  "Nice", 
-  "Dubrovnik", 
-  "Santorini", 
+  "Nice",
+  "Dubrovnik",
+  "Santorini",
   "Palma de Mallorca",
-
-  // Destinații de Munte & Natură
-  "Zermatt", 
-  "Chamonix", 
-  "Interlaken", 
-  "Innsbruck", 
-  "Reykjavik", 
+  "Zermatt",
+  "Chamonix",
+  "Interlaken",
+  "Innsbruck",
+  "Reykjavik",
   "Brasov",
-
-  // Capitale Vibrante / City Break
-  "Copenhagen", 
-  "Stockholm", 
-  "Dublin", 
-  "Zurich"
+  "Copenhagen",
+  "Stockholm",
+  "Dublin",
+  "Zurich",
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -66,45 +58,40 @@ async function geoname(city) {
   return getJson(url);
 }
 
-async function radiusPlaces({ lon, lat, radius = 20000, limit = 200, kinds = "interesting_places" }) {
-  const url =
-    `${BASE}/places/radius?radius=${radius}` +
-    `&lon=${lon}&lat=${lat}` +
-    `&kinds=${encodeURIComponent(kinds)}` +
-    `&format=json&limit=${limit}` +
-    `&apikey=${API_KEY}`;
-  return getJson(url);
+function normalizeCountry(g) {
+  const country = g?.country || (g?.country_code ? g.country_code.toUpperCase() : null);
+  const countryEn = g?.country || null; 
+  return { country, countryEn };
 }
 
-async function placeDetails(xid) {
-  const url = `${BASE}/places/xid/${encodeURIComponent(xid)}?apikey=${API_KEY}`;
-  try {
-    return await getJson(url);
-  } catch {
-    return null;
-  }
-}
+async function upsertCity(cityName, g) {
+  const name = g?.name || cityName || null;
+  const { country, countryEn } = normalizeCountry(g);
 
-async function upsertDestination(d) {
-  const name = d.name || null;
-  const country = d.address?.country || d.address?.country_code || null;
-  const description = d.wikipedia_extracts?.text || d.info?.descr || null;
+  const lat = g?.lat ?? null;
+  const lon = g?.lon ?? null;
 
-  const lat = d.point?.lat ?? null;
-  const lon = d.point?.lon ?? null;
+  const source = "opentripmap_geoname";
+  const sourceId =
+    g?.geoname_id != null
+      ? String(g.geoname_id)
+      : `${name || ""}|${country || ""}|${lat ?? ""},${lon ?? ""}`.trim();
 
-  const source = "opentripmap";
-  const sourceId = d.xid;
-  const kinds = d.kinds || null;
-  const otmRate = d.rate ?? 0;
+  // Pentru orase nu ai description/kinds/rate
+  const description = null;
+  const kinds = null;
+  const otmRate = 0;
 
-  if (!sourceId || !name || lat == null || lon == null) return;
+  // Pastrezi coloanele *_en (ai deja in DB)
+  const descriptionEn = null;
+
+  if (!name || lat == null || lon == null || !sourceId) return false;
 
   await query(
     `
     INSERT INTO "Destinations"
-      (name, country, description, latitude, longitude, source, source_id, kinds, otm_rate)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      (name, country, description, latitude, longitude, source, source_id, kinds, otm_rate, country_en, description_en)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
     ON CONFLICT (source, source_id)
     DO UPDATE SET
       name = EXCLUDED.name,
@@ -113,43 +100,58 @@ async function upsertDestination(d) {
       latitude = EXCLUDED.latitude,
       longitude = EXCLUDED.longitude,
       kinds = EXCLUDED.kinds,
-      otm_rate = EXCLUDED.otm_rate
+      otm_rate = EXCLUDED.otm_rate,
+      country_en = EXCLUDED.country_en,
+      description_en = EXCLUDED.description_en
     `,
-    [name, country, description, lat, lon, source, sourceId, kinds, otmRate]
+    [
+      name,
+      country,
+      description,
+      lat,
+      lon,
+      source,
+      sourceId,
+      kinds,
+      otmRate,
+      countryEn,
+      descriptionEn,
+    ]
   );
+
+  return true;
 }
 
 async function main() {
-  console.log("Seed OpenTripMap -> Destinations");
+  console.log("Seed OpenTripMap (geoname cities) -> Destinations");
 
-  const kinds =
-    "interesting_places,cultural,architecture,historic,museums,urban_environment";
+  let saved = 0;
+  let skipped = 0;
+  let failed = 0;
 
   for (const city of CITIES) {
     console.log("City:", city);
 
-    const g = await geoname(city);
-    const list = await radiusPlaces({
-      lon: g.lon,
-      lat: g.lat,
-      radius: 20000,
-      limit: 200,
-      kinds,
-    });
+    try {
+      const g = await geoname(city);
+      const ok = await upsertCity(city, g);
 
-    console.log(`  found: ${list.length}`);
-
-    for (const p of list) {
-      if (!p?.xid) continue;
-      const det = await placeDetails(p.xid);
-      if (det) await upsertDestination(det);
-      await sleep(120);
+      if (ok) {
+        saved++;
+        console.log("  saved:", g?.name || city);
+      } else {
+        skipped++;
+        console.log("  skipped (missing name/lat/lon/sourceId)");
+      }
+    } catch (e) {
+      failed++;
+      console.log("  failed:", e?.message || e);
     }
 
-    await sleep(500);
+    await sleep(180);
   }
 
-  console.log("Done.");
+  console.log(`Done. saved=${saved}, skipped=${skipped}, failed=${failed}`);
   process.exit(0);
 }
 

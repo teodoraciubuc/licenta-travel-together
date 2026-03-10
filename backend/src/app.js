@@ -18,7 +18,7 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 app.get("/db-test", async (req, res) => {
   try {
     const result = await pool.query("SELECT 1 AS ok");
-    return res.json(result.rows[0]); // { ok: 1 }
+    return res.json(result.rows[0]);
   } catch (e) {
     return res.status(500).json({
       code: e.code,

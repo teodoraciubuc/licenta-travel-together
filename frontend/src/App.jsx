@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Link } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import QuestionnairePage from "./pages/QuestionnairePage";
@@ -9,24 +9,36 @@ import DashboardPage from "./pages/DashboardPage";
 
 function Layout({ children }) {
   return <>{children}</>;
-
-};
+}
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem("token");
-  if (!token) return <Navigate to="/login" replace />;
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
   return children;
 }
 
 export default function App() {
-  const token = localStorage.getItem("token");
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to={token ? "/dashboard" : "/login"} replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
+        <Route
+          path="/dashboard"
+          element={
+            <Layout>
+              <PrivateRoute>
+                <DashboardPage />
+              </PrivateRoute>
+            </Layout>
+          }
+        />
 
         <Route
           path="/questionnaire"
@@ -71,18 +83,8 @@ export default function App() {
             </Layout>
           }
         />
-        <Route
-          path="/dashboard"
-          element={
-            <Layout>
-              <PrivateRoute>
-                <DashboardPage />
-              </PrivateRoute>
-            </Layout>
-          }
-        />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
-
   );
 }

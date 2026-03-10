@@ -1,7 +1,8 @@
-const router = require("express").Router();
+const express = require("express");
+const { getDashboard } = require("../controllers/dashboard.controller");
 const auth = require("../middleware/auth");
-// Aici am adaugat getDashboard in lista de functii importate
-const { createItinerary, addItem, getMyItineraries, getDashboard } = require("../controllers/dashboard.controller");
+
+const router = express.Router();
 
 router.get("/", auth, getDashboard);
 
