@@ -27,7 +27,6 @@ CREATE TABLE "Tags" (
 );
 
 -- 3) DESTINATIONS
--- 3) DESTINATIONS
 CREATE TABLE "Destinations" (
   "id" SERIAL PRIMARY KEY,
   "name" VARCHAR(255) NOT NULL,
@@ -114,3 +113,35 @@ CREATE TABLE "Chat_Logs" (
   "timestamp" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "fk_chat_logs_user" FOREIGN KEY ("user_id") REFERENCES "Users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+
+-- 10) DATE INITIALE PENTRU TAGS
+INSERT INTO "Tags" (id, name) VALUES
+(1, 'Munte'),
+(2, 'Plaja / Litoral'),
+(3, 'Oras istoric'),
+(4, 'Natura / Parcuri nationale'),
+(5, 'Lacuri / Cascade'),
+(6, 'Soare si caldura'),
+(7, 'Zapada si iarna'),
+(8, 'Clima temperata'),
+(9, 'Vizitare muzee'),
+(10, 'Drumetii / Hiking'),
+(11, 'Shopping'),
+(12, 'Gastronomie'),
+(13, 'Sporturi de apa'),
+(14, 'Viata de noapte / Clubbing')
+ON CONFLICT (name) DO NOTHING;
+
+-- Resetare secventa pentru ID-uri la Tags 
+SELECT setval(' "Tags_id_seq" ', (SELECT MAX(id) FROM "Tags"));
+
+-- 11) ADAUGARE COLOANA IMAGE_URL DACA LIPSESTE
+ALTER TABLE "Destinations" ADD COLUMN IF NOT EXISTS "image_url" TEXT;
+
+-- 12) CONSTRANGERI SUPLIMENTARE (PENTRU LOGICA DIN COD)
+ALTER TABLE "User_Map_Status" DROP CONSTRAINT IF EXISTS "uq_user_map_status_user_dest";
+ALTER TABLE "User_Map_Status" ADD CONSTRAINT "uq_user_map_status_user_dest" UNIQUE ("user_id", "destination_id");
+
+-- Previne dublarea aceleiasi preferinte pentru user
+ALTER TABLE "User_Preferences" DROP CONSTRAINT IF EXISTS "uq_user_preferences_user_tag";
+ALTER TABLE "User_Preferences" ADD CONSTRAINT "uq_user_preferences_user_tag" UNIQUE ("user_id", "tag_id");

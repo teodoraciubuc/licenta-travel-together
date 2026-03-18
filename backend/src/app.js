@@ -12,7 +12,6 @@ const dashboardRoutes = require("./routes/dashboard.routes");
 const app = express();
 app.use(cors());
 app.use(express.json());
-
 app.get("/health", (req, res) => res.json({ ok: true }));
 
 app.get("/db-test", async (req, res) => {

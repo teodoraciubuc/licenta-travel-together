@@ -1,66 +1,88 @@
 const pool = require("../db");
-async function createItinerary(req, res) {
-  const userId = req.user.id;
-  const { title, start_date, end_date } = req.body;
 
-  if (!title) return res.status(400).json({ message: "title required" });
+async function createTrip(req, res) {
+  try {
+    const userId = req.user?.userId || req.userId || req.user?.id;
 
-  const [result] = await pool.query(
-    "INSERT INTO Itineraries (user_id, title, start_date, end_date) VALUES (:userId, :title, :start_date, :end_date)",
-    { userId, title, start_date: start_date || null, end_date: end_date || null }
-  );
+    if (!userId) {
+      return res.status(401).json({ message: "Eroare de autentificare." });
+    }
 
-  res.status(201).json({ id: result.insertId });
+    const { name, destination, startDate, endDate } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "name este obligatoriu." });
+    }
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: "startDate si endDate sunt obligatorii." });
+    }
+
+    if (new Date(endDate) < new Date(startDate)) {
+      return res.status(400).json({ message: "endDate trebuie sa fie dupa startDate." });
+    }
+
+    const result = await pool.query(
+      `
+      INSERT INTO "Itineraries" (user_id, title, destination, start_date, end_date)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING
+        id,
+        user_id,
+        title AS name,
+        destination,
+        start_date AS "startDate",
+        end_date AS "endDate",
+        created_at
+      `,
+      [userId, name.trim(), destination?.trim() || "", startDate, endDate]
+    );
+
+    return res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("createTrip error:", error);
+    return res.status(500).json({ message: "Eroare interna server.", details: error.message });
+  }
 }
 
-async function addItem(req, res) {
-  const userId = req.user.id;
-  const { itineraryId, destinationId, day_number, order_index } = req.body;
+async function getTripById(req, res) {
+  try {
+    const userId = req.user?.userId || req.userId || req.user?.id;
+    const { id } = req.params;
 
-  if (!itineraryId || !destinationId) return res.status(400).json({ message: "itineraryId and destinationId required" });
+    const tripResult = await pool.query(
+      `
+      SELECT
+        id,
+        user_id,
+        title AS name,
+        destination,
+        start_date AS "startDate",
+        end_date AS "endDate",
+        created_at
+      FROM "Itineraries"
+      WHERE id = $1 AND user_id = $2
+      `,
+      [id, userId]
+    );
 
-  const [it] = await pool.query(
-    "SELECT id FROM Itineraries WHERE id = :itineraryId AND user_id = :userId",
-    { itineraryId, userId }
-  );
-  if (!it.length) return res.status(403).json({ message: "Not your itinerary" });
+    if (tripResult.rows.length === 0) {
+      return res.status(404).json({ message: "Itinerariul nu a fost gasit." });
+    }
 
-  const [result] = await pool.query(
-    "INSERT INTO Itinerary_Items (itinerary_id, destination_id, day_number, order_index) VALUES (:itineraryId, :destinationId, :day_number, :order_index)",
-    { itineraryId, destinationId, day_number: day_number || 1, order_index: order_index || 1 }
-  );
+    const trip = tripResult.rows[0];
 
-  res.status(201).json({ id: result.insertId });
+    return res.json({
+      ...trip,
+      stops: []
+    });
+  } catch (error) {
+    console.error("getTripById error:", error);
+    return res.status(500).json({ message: "Eroare interna server.", details: error.message });
+  }
 }
 
-async function getMyItineraries(req, res) {
-  const userId = req.user.id;
-
-  const [its] = await pool.query(
-    "SELECT id, title, start_date, end_date FROM Itineraries WHERE user_id = :userId ORDER BY id DESC",
-    { userId }
-  );
-
-  const ids = its.map((x) => x.id);
-  if (!ids.length) return res.json([]);
-
-  const [items] = await pool.query(
-    `
-    SELECT ii.itinerary_id, ii.id, ii.day_number, ii.order_index,
-           d.id as destination_id, d.name, d.country, d.latitude, d.longitude
-    FROM Itinerary_Items ii
-    JOIN Destinations d ON d.id = ii.destination_id
-    WHERE ii.itinerary_id IN (${ids.map(() => "?").join(",")})
-    ORDER BY ii.itinerary_id, ii.day_number, ii.order_index
-    `,
-    ids
-  );
-
-  const map = new Map();
-  for (const it of its) map.set(it.id, { ...it, items: [] });
-  for (const item of items) map.get(item.itinerary_id)?.items.push(item);
-
-  res.json(Array.from(map.values()));
-}
-
-module.exports = { createItinerary, addItem, getMyItineraries };
+module.exports = {
+  createTrip,
+  getTripById
+};

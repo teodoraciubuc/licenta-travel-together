@@ -28,7 +28,8 @@ export default function App() {
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-
+        <Route path="/itineraries/new" element={<ItinerariesPage />} />
+        <Route path="/itineraries/:id" element={<ItinerariesPage />} />
         <Route
           path="/dashboard"
           element={

@@ -1,9 +1,8 @@
-const router = require("express").Router();
-const auth = require("../middleware/auth");
-const { createItinerary, addItem, getMyItineraries } = require("../controllers/itineraries.controller");
+const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth');
+const itinerariesController = require('../controllers/itineraries.controller');
 
-router.post("/", auth, createItinerary);
-router.post("/items", auth, addItem);
-router.get("/me", auth, getMyItineraries);
-
+router.post('/', auth, itinerariesController.createTrip);
+router.get('/:id', auth, itinerariesController.getTripById);
 module.exports = router;

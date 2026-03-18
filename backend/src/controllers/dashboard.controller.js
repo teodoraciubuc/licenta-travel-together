@@ -10,7 +10,7 @@ async function getDashboard(req, res) {
 
     const offset = parseInt(req.query.offset || 0, 10);
     const limit = 6;
-    const MAX_SCORE = 15; // 3 taguri x nota maxima 5
+    const MAX_SCORE = 15;
 
     const { rows: prefRows } = await pool.query(
       'SELECT COUNT(*) AS cnt FROM "User_Preferences" WHERE user_id = $1',
@@ -41,6 +41,15 @@ async function getDashboard(req, res) {
       [userId]
     );
 
+    const { rows: visitedRows } = await pool.query(
+      `SELECT d.id, d.name, d.latitude, d.longitude, d.country_en
+       FROM "User_Map_Status" ums
+       JOIN "Destinations" d ON d.id = ums.destination_id
+       WHERE ums.user_id = $1 AND ums.status = 'visited'
+         AND d.latitude IS NOT NULL AND d.longitude IS NOT NULL`,
+      [userId]
+    );
+
     const recsRes = await pool.query(
       `SELECT
          d.id,
@@ -66,7 +75,6 @@ async function getDashboard(req, res) {
     const recommendations = recsRes.rows.map(dest => {
       const rawScore = parseFloat(dest.raw_score);
       const finalScore = Math.min(Math.round((rawScore / MAX_SCORE) * 100), 100);
-
       return {
         id: dest.id,
         name: dest.name,
@@ -88,6 +96,7 @@ async function getDashboard(req, res) {
       itinerariesCount,
       recentItineraries: recentIts,
       recommendations,
+      visitedDestinations: visitedRows,
     });
   } catch (error) {
     console.error("Dashboard error:", error);
