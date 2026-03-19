@@ -46,4 +46,25 @@ async function login(req, res) {
   }
 }
 
-module.exports = { register, login };
+
+async function updateUsername(req, res) {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    const { username } = req.body;
+
+    if (!username || !username.trim()) {
+      return res.status(400).json({ message: "username is required" });
+    }
+
+    await pool.query(
+      'UPDATE "Users" SET username = $1 WHERE id = $2',
+      [username.trim(), userId]
+    );
+
+    return res.json({ username: username.trim() });
+  } catch (e) {
+    return res.status(500).json({ message: e.message });
+  }
+}
+
+module.exports = { register, login, updateUsername };

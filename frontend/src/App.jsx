@@ -6,6 +6,7 @@ import RecommendationsPage from "./pages/RecommendationsPage";
 import MapPage from "./pages/MapPage";
 import ItinerariesPage from "./pages/ItinerariesPage";
 import DashboardPage from "./pages/DashboardPage";
+import ProfilePage from './pages/ProfilePage';
 
 function Layout({ children }) {
   return <>{children}</>;
@@ -25,11 +26,11 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
-
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/itineraries/new" element={<ItinerariesPage />} />
         <Route path="/itineraries/:id" element={<ItinerariesPage />} />
+        <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
         <Route
           path="/dashboard"
           element={
