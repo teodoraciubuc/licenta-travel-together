@@ -64,6 +64,11 @@ async function getDashboard(req, res) {
        LEFT JOIN "Destination_Tags" dt ON dt.destination_id = d.id
        LEFT JOIN "User_Preferences" up
          ON up.tag_id = dt.tag_id AND up.user_id = $1
+       WHERE d.id NOT IN (
+         SELECT destination_id
+         FROM "User_Map_Status"
+         WHERE user_id = $1 AND status = 'visited'
+       )
        GROUP BY
          d.id, d.name, d.country, d.country_en, d.latitude, d.longitude, d.image_url
        HAVING COALESCE(SUM(up.score), 0) > 0
