@@ -15,9 +15,8 @@ async function getMyMap(req, res) {
       SELECT
         d.id,
         d.name,
-        d.country,
+        d.country        AS country_code,
         d.country_en,
-        d.country_code,
         d.latitude,
         d.longitude,
         ums.status
@@ -161,7 +160,7 @@ async function searchDestinations(req, res) {
       SELECT
         id,
         name,
-        country,
+        country          AS country_code,
         country_en,
         latitude,
         longitude

@@ -44,15 +44,15 @@
 }
 
 .legend-dot.visited {
-    background: #ffffff;
+    background: #9ba59f;
 }
 
 .legend-dot.planned {
-    background: #3b82f6;
+    background: #766fb5;
 }
 
 .legend-dot.wishlist {
-    background: #f59e0b;
+    background: #986666;
 }
 
 .map-page-right {
@@ -89,20 +89,20 @@
 }
 
 .status-btn.active-visited {
-    background: #ffffff;
+    background: rgba(155, 165, 159, 0.2);
     color: #9ba59f;
-    border-color: #ffffff;
+    border-color: #9ba59f;
 }
 
 .status-btn.active-planned {
-    background: #766fb5b8;
-    color: #fff;
-    border-color: #766fb5b8;
+    background: rgba(118, 111, 181, 0.35);
+    color: #c4c0e8;
+    border-color: #766fb5;
 }
 
 .status-btn.active-wishlist {
-    background: #986666;
-    color: #0b1020;
+    background: rgba(152, 102, 102, 0.35);
+    color: #c49090;
     border-color: #986666;
 }
 
@@ -202,7 +202,7 @@
 }
 
 .status-wishlist {
-    color: 986666;
+    color: #986666;
 }
 
 .btn-remove {
@@ -435,4 +435,79 @@
     border-color: #ef4444;
     color: #ef4444;
     background: rgba(239, 68, 68, 0.08);
+}
+
+/* ── My countries header + filter pills ── */
+.my-countries-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.my-countries-header h3 {
+    margin: 0;
+}
+
+.countries-count {
+    font-size: 0.78rem;
+    color: #64748b;
+    font-weight: 400;
+}
+
+.list-filter-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.list-filter-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid #334155;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.list-filter-pill:hover {
+    border-color: #64748b;
+    color: #f1f5f9;
+}
+
+.pill-num {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 0 5px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.list-filter-pill--active-all {
+    background: #334155;
+    border-color: #64748b;
+    color: #f1f5f9;
+}
+
+.list-filter-pill--active-visited {
+    background: rgba(155, 165, 159, 0.2);
+    border-color: #9ba59f;
+    color: #9ba59f;
+}
+
+.list-filter-pill--active-planned {
+    background: rgba(118, 111, 181, 0.2);
+    border-color: #766fb5;
+    color: #c4c0e8;
+}
+
+.list-filter-pill--active-wishlist {
+    background: rgba(152, 102, 102, 0.2);
+    border-color: #986666;
+    color: #c49090;
 }
