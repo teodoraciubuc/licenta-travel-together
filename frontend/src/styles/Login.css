@@ -256,3 +256,26 @@
         min-height: 280px;
     }
 }
+
+.oauth-btn {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+.oauth-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: oauth-spin 0.7s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+@keyframes oauth-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

@@ -32,7 +32,10 @@ import img27 from "../assets/auth/27.jpg";
 import img28 from "../assets/auth/28.jpg";
 import img29 from "../assets/auth/29.jpg";
 import img30 from "../assets/auth/30.jpg";
+
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3001";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const FACEBOOK_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID || "";
 
 export default function LoginPage() {
     const navigate = useNavigate();
@@ -42,14 +45,14 @@ export default function LoginPage() {
         img11, img12, img13, img14, img15, img16, img17, img18, img19, img20,
         img21, img22, img23, img24, img25, img26, img27, img28, img29, img30,
     ];
-    const [slideIndex, setSlideIndex] = useState(0);
 
+    const [slideIndex, setSlideIndex] = useState(0);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState("");
 
+    /* ── Slideshow ── */
     useEffect(() => {
         const t = setInterval(() => {
             setSlideIndex((i) => (i + 1) % images.length);
@@ -57,25 +60,55 @@ export default function LoginPage() {
         return () => clearInterval(t);
     }, [images.length]);
 
+    /* ── Load Google GSI script ── */
+    useEffect(() => {
+        if (!GOOGLE_CLIENT_ID) return;
+        if (document.getElementById("google-gsi-script")) return;
+        const script = document.createElement("script");
+        script.id = "google-gsi-script";
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+    }, []);
+
+    /* ── Load Facebook SDK ── */
+    useEffect(() => {
+        if (!FACEBOOK_APP_ID) return;
+        if (document.getElementById("facebook-sdk")) return;
+        window.fbAsyncInit = function () {
+            window.FB.init({
+                appId: FACEBOOK_APP_ID,
+                cookie: true,
+                xfbml: true,
+                version: "v19.0",
+            });
+        };
+        const script = document.createElement("script");
+        script.id = "facebook-sdk";
+        script.src = "https://connect.facebook.net/en_US/sdk.js";
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+    }, []);
+
+
+    /* ── Email / Password Login ── */
     async function handleLogin(e) {
         e.preventDefault();
         setErr("");
         setLoading(true);
-
         try {
             const r = await fetch(`${API_BASE}/api/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),
             });
-
             const data = await r.json().catch(() => ({}));
-
             if (!r.ok) {
                 setErr(data?.message || "Login esuat. Verifica email/parola.");
                 return;
             }
-
             localStorage.setItem("token", data.token);
             localStorage.setItem("user_name", data.username || "Calatorule");
             navigate("/dashboard");
@@ -100,12 +133,10 @@ export default function LoginPage() {
                         <div className="brand-logo">✈</div>
                         <div className="brand-name">TravelTogether</div>
                     </div>
-
                     <p className="brand-text">
                         Discover new destinations, plan trips with friends, and create memories
                         that last a lifetime.
                     </p>
-
                     <div className="dots">
                         {images.map((_, i) => (
                             <span key={i} className={`dot ${i === slideIndex ? "active" : ""}`} />
@@ -120,15 +151,9 @@ export default function LoginPage() {
                     <h1 className="title">Welcome back</h1>
                     <p className="subtitle">Log in to continue planning your next trip.</p>
 
-                    {/* Tabs Login / SignUp */}
                     <div className="segmented">
-                        <button type="button" className="seg-btn active">
-                            Log in
-                        </button>
-
-                        <Link className="seg-btn linklike" to="/register">
-                            Sign up
-                        </Link>
+                        <button type="button" className="seg-btn active">Log in</button>
+                        <Link className="seg-btn linklike" to="/register">Sign up</Link>
                     </div>
 
                     <form onSubmit={handleLogin} className="form">
@@ -164,16 +189,6 @@ export default function LoginPage() {
                             {loading ? "Please wait..." : "Log in"}
                         </button>
 
-                        <div className="or">Or continue with</div>
-
-                        <div className="oauth">
-                            <button type="button" className="oauth-btn" disabled>
-                                Google
-                            </button>
-                            <button type="button" className="oauth-btn" disabled>
-                                Facebook
-                            </button>
-                        </div>
 
                         <div className="footer">
                             Don&apos;t have an account? <Link to="/register">Sign up</Link>

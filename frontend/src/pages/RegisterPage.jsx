@@ -33,6 +33,10 @@ import img28 from "../assets/auth/28.jpg";
 import img29 from "../assets/auth/29.jpg";
 import img30 from "../assets/auth/30.jpg";
 
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3001";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+const FACEBOOK_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID || "";
+
 export default function RegisterPage() {
     const navigate = useNavigate();
 
@@ -50,6 +54,7 @@ export default function RegisterPage() {
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState("");
 
+    /* ── Slideshow ── */
     useEffect(() => {
         const t = setInterval(() => {
             setSlideIndex((i) => (i + 1) % images.length);
@@ -57,6 +62,40 @@ export default function RegisterPage() {
         return () => clearInterval(t);
     }, [images.length]);
 
+    /* ── Load Google GSI script ── */
+    useEffect(() => {
+        if (!GOOGLE_CLIENT_ID) return;
+        if (document.getElementById("google-gsi-script")) return;
+        const script = document.createElement("script");
+        script.id = "google-gsi-script";
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+    }, []);
+
+    /* ── Load Facebook SDK ── */
+    useEffect(() => {
+        if (!FACEBOOK_APP_ID) return;
+        if (document.getElementById("facebook-sdk")) return;
+        window.fbAsyncInit = function () {
+            window.FB.init({
+                appId: FACEBOOK_APP_ID,
+                cookie: true,
+                xfbml: true,
+                version: "v19.0",
+            });
+        };
+        const script = document.createElement("script");
+        script.id = "facebook-sdk";
+        script.src = "https://connect.facebook.net/en_US/sdk.js";
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+    }, []);
+
+
+    /* ── Email / Password Register ── */
     async function handleRegister(e) {
         e.preventDefault();
         setErr("");
@@ -65,7 +104,6 @@ export default function RegisterPage() {
             setErr("Trebuie sa accepti termenii si politica de confidentialitate.");
             return;
         }
-
         if (password.length < 8) {
             setErr("Parola trebuie sa aiba minim 8 caractere.");
             return;
@@ -73,37 +111,32 @@ export default function RegisterPage() {
 
         setLoading(true);
         try {
-            const base = import.meta.env.VITE_API_BASE || "http://localhost:3001";
-
-            const res = await fetch(`${base}/api/auth/register`, {
+            const res = await fetch(`${API_BASE}/api/auth/register`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username: fullName, email, password }),
             });
-
             const data = await res.json().catch(() => ({}));
-
             if (!res.ok) {
                 setErr(data?.message || "Inregistrare esuata.");
                 return;
             }
 
-            const loginRes = await fetch(`${base}/api/auth/login`, {
+            const loginRes = await fetch(`${API_BASE}/api/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),
             });
-
             const loginData = await loginRes.json();
             if (!loginRes.ok) {
                 setErr("Autentificare automata esuata.");
                 return;
             }
             localStorage.setItem("token", loginData.token);
-
+            localStorage.setItem("user_name", loginData.username || fullName || "Calatorule");
             navigate("/questionnaire");
         } catch {
-            setErr("Eraoare backend-ul ");
+            setErr("Eroare backend.");
         } finally {
             setLoading(false);
         }
@@ -111,7 +144,7 @@ export default function RegisterPage() {
 
     return (
         <div className="auth-wrap">
-            {/* LEFT - Slideshow Section */}
+            {/* LEFT */}
             <div className="auth-left">
                 <div
                     className="auth-left-bg"
@@ -134,7 +167,7 @@ export default function RegisterPage() {
                 </div>
             </div>
 
-            {/* RIGHT - Form Section */}
+            {/* RIGHT */}
             <div className="auth-right">
                 <div className="card">
                     <h1 className="title">Create an account</h1>
@@ -196,12 +229,6 @@ export default function RegisterPage() {
                         <button type="submit" className="primary" disabled={loading}>
                             {loading ? "Please wait..." : "Create Account"}
                         </button>
-
-                        <div className="or">Or continue with</div>
-                        <div className="oauth">
-                            <button type="button" className="oauth-btn" disabled>Google</button>
-                            <button type="button" className="oauth-btn" disabled>Facebook</button>
-                        </div>
 
                         <div className="footer">
                             Already have an account? <Link to="/login">Log in</Link>
