@@ -7,7 +7,8 @@ router.get ('/me',             auth, mapController.getMyMap);
 router.get ('/search',         auth, mapController.searchDestinations);
 router.post('/status',         auth, mapController.setMapStatus);
 router.post('/remove',         auth, mapController.removeMapStatus);
-router.post('/country-status', auth, mapController.setCountryStatus);   
-router.post('/country-remove', auth, mapController.removeCountryStatus); 
- 
+router.post('/country-status', auth, mapController.setCountryStatus);
+router.post('/country-remove', auth, mapController.removeCountryStatus);
+router.post('/rate',           auth, mapController.rateDestination);
+
 module.exports = router;
