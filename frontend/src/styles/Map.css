@@ -592,3 +592,176 @@
 .status-wishlist {
     color: #986666;
 }
+
+.cities-hint {
+    font-size: 0.72rem;
+    color: #475569;
+    margin: 0 0 6px;
+    font-style: italic;
+}
+
+.expand-btn--open {
+    border-color: #f59e0b;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.08);
+}
+
+/* ── Adauga la sfarsitul Map.css ── */
+
+/* No results banner */
+.no-results-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #131e2e;
+    border: 1px dashed #2d4060;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    color: #64748b;
+}
+
+.no-results-add-btn {
+    background: #1e3a5f;
+    border: 1px solid #3b82f6;
+    color: #93c5fd;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+
+.no-results-add-btn:hover {
+    background: #2563eb;
+    color: #fff;
+    border-color: #2563eb;
+}
+
+/* Manual add form */
+.manual-form {
+    background: #0f1929;
+    border: 1px solid #1e3a5f;
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.manual-form-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin: 0;
+}
+
+.manual-form-sub {
+    font-size: 0.75rem;
+    color: #475569;
+    margin: -6px 0 2px;
+}
+
+.manual-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.manual-field label {
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.manual-field input,
+.manual-field select {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    color: #f1f5f9;
+    font-size: 0.85rem;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.manual-field input:focus,
+.manual-field select:focus {
+    border-color: #3b82f6;
+}
+
+.manual-field select option {
+    background: #1e293b;
+}
+
+.manual-error {
+    font-size: 0.78rem;
+    color: #f87171;
+    margin: 0;
+}
+
+.manual-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.manual-btn-ghost {
+    flex: 1;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    color: #64748b;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.manual-btn-ghost:hover {
+    border-color: #64748b;
+    color: #f1f5f9;
+}
+
+.manual-btn-primary {
+    flex: 2;
+    padding: 8px;
+    background: #2563eb;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.manual-btn-primary:hover {
+    background: #1d4ed8;
+}
+
+.manual-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Cities hint */
+.cities-hint {
+    font-size: 0.72rem;
+    color: #475569;
+    margin: 0 0 4px;
+    font-style: italic;
+}
+
+/* Expand btn open state */
+.expand-btn--open {
+    border-color: #f59e0b;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.08);
+}

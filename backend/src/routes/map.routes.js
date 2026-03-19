@@ -10,5 +10,6 @@ router.post('/remove',         auth, mapController.removeMapStatus);
 router.post('/country-status', auth, mapController.setCountryStatus);
 router.post('/country-remove', auth, mapController.removeCountryStatus);
 router.post('/rate',           auth, mapController.rateDestination);
+router.post('/suggest',        auth, mapController.suggestDestination);
 
 module.exports = router;
