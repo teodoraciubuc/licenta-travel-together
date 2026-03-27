@@ -848,3 +848,164 @@
         padding: 28px 22px;
     }
 }
+
+
+.itin-recs-section {
+    background: var(--itin-panel);
+    border-top: 1px solid var(--itin-border);
+    padding: 24px 28px 32px;
+    font-family: 'DM Sans', sans-serif;
+    flex-shrink: 0;
+}
+
+/* Header row */
+.itin-recs-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+
+.itin-recs-header span:first-child {
+    font-size: 1.2rem;
+}
+
+.itin-recs-header h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    color: var(--itin-text-hi);
+    margin: 0;
+}
+
+.itin-recs-subtitle {
+    font-size: 0.77rem;
+    color: var(--itin-text-lo);
+    margin-left: auto;
+}
+
+/* Loading / error / empty states */
+.itin-recs-status {
+    color: var(--itin-text-mid);
+    font-size: 0.87rem;
+    margin: 0;
+}
+
+.itin-recs-error {
+    color: #f87171;
+}
+
+/* Cards grid */
+.itin-recs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+}
+
+/* Individual card */
+.itin-rec-card {
+    background: var(--itin-card);
+    border: 1px solid var(--itin-border);
+    border-radius: var(--itin-radius);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.18s, transform 0.15s, box-shadow 0.18s;
+}
+
+.itin-rec-card:hover {
+    border-color: var(--itin-border-hi);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+
+.itin-rec-card--added {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+/* Category kinds badge */
+.itin-rec-kinds {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--itin-accent);
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    border-radius: 20px;
+    padding: 2px 9px;
+    align-self: flex-start;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Name */
+.itin-rec-name {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--itin-text-hi);
+    margin: 0;
+    line-height: 1.35;
+    flex: 1;
+}
+
+/* Star rating */
+.itin-rec-rate {
+    font-size: 0.8rem;
+    color: var(--itin-gold);
+    letter-spacing: 1px;
+}
+
+/* Add button */
+.itin-rec-btn {
+    margin-top: auto;
+    padding: 8px 14px;
+    background: var(--itin-accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--itin-radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.itin-rec-btn:hover:not(:disabled) {
+    background: #4f52e0;
+    box-shadow: 0 4px 14px var(--itin-glow);
+    transform: translateY(-1px);
+}
+
+.itin-rec-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.itin-rec-btn--added {
+    background: var(--itin-success) !important;
+    opacity: 1 !important;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .itin-recs-section {
+        padding: 18px 16px 24px;
+    }
+
+    .itin-recs-subtitle {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .itin-recs-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 10px;
+    }
+}
