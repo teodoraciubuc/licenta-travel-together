@@ -15,6 +15,7 @@ async function getRecommendations(req, res) {
         d.latitude,
         d.longitude,
         d.image_url,
+        d.otm_rate,
         COALESCE(SUM(up.score), 0) AS score,
         COALESCE(string_agg(DISTINCT t.name, ', ' ORDER BY t.name), '') AS tags
       FROM "Destinations" d
@@ -27,8 +28,9 @@ async function getRecommendations(req, res) {
         FROM "User_Map_Status"
         WHERE user_id = $1 AND status = 'visited'
       )
-      GROUP BY d.id, d.name, d.country_en, d.country, d.latitude, d.longitude, d.image_url
-      ORDER BY score DESC, d.name ASC
+      AND d.otm_rate >= 1 
+      GROUP BY d.id, d.name, d.country_en, d.country, d.latitude, d.longitude, d.image_url, d.otm_rate
+      ORDER BY score DESC, d.otm_rate DESC, d.name ASC
       LIMIT $2
     `;
 

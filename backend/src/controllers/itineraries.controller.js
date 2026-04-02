@@ -111,93 +111,70 @@ async function getRecommendations(req, res) {
       `SELECT id, destination FROM "Itineraries" WHERE id = $1 AND user_id = $2`,
       [id, userId]
     );
-
-    if (tripResult.rows.length === 0) {
+    if (tripResult.rows.length === 0)
       return res.status(404).json({ message: "Itinerariul nu a fost gasit." });
-    }
 
     const rawDestination = tripResult.rows[0].destination;
-    if (!rawDestination || !rawDestination.trim()) {
+    if (!rawDestination?.trim())
       return res.status(400).json({ message: "Itinerarul nu are o destinatie setata." });
-    }
 
     const cityName = rawDestination.split(",")[0].trim();
 
-    const destResult = await pool.query(
-      `
-      SELECT latitude, longitude
-      FROM "Destinations"
-      WHERE LOWER(name) = LOWER($1)
-        AND latitude IS NOT NULL
-        AND longitude IS NOT NULL
-      LIMIT 1
-      `,
-      [cityName]
-    );
-
-    if (destResult.rows.length === 0) {
-      return res.status(404).json({
-        message: `Nu am gasit coordonate pentru "${cityName}". Asigura-te ca orasul exista in baza de date.`,
-      });
-    }
-
-    const { latitude, longitude } = destResult.rows[0];
-
-    const prefsResult = await pool.query(
-      `SELECT tag_id FROM "User_Preferences" WHERE user_id = $1 ORDER BY score DESC`,
-      [userId]
-    );
-
-    const kindsSet = new Set();
-    for (const row of prefsResult.rows) {
-      const mapped = TAG_TO_KINDS[row.tag_id];
-      if (mapped) {
-        mapped.split(",").forEach((k) => kindsSet.add(k.trim()));
-      }
-    }
-    const kinds = kindsSet.size > 0 ? [...kindsSet].join(",") : "historic,museums,natural";
-
-    if (!OTM_API_KEY) {
+    if (!OTM_API_KEY)
       return res.status(500).json({ message: "OPENTRIPMAP_API_KEY lipseste din .env." });
-    }
 
-    const radius = 5000;
-    const otmUrl =
+    const geoRes = await fetch(
+      `${OTM_BASE}/places/geoname?name=${encodeURIComponent(cityName)}&apikey=${OTM_API_KEY}`
+    );
+    if (!geoRes.ok)
+      return res.status(502).json({ message: `Nu am putut geolocata "${cityName}".` });
+
+    const geoData = await geoRes.json();
+    if (!geoData.lat || !geoData.lon)
+      return res.status(404).json({ message: `Nu am gasit "${cityName}".` });
+
+    const { lat, lon } = geoData;
+
+    const otmRes = await fetch(
       `${OTM_BASE}/places/radius` +
-      `?radius=${radius}` +
-      `&lon=${longitude}` +
-      `&lat=${latitude}` +
-      `&kinds=${kinds}` +
-      `&rate=3` +
+      `?radius=15000` +
+      `&lon=${lon}` +
+      `&lat=${lat}` +
+      `&kinds=interesting_places` +
       `&format=json` +
-      `&limit=10` +
-      `&apikey=${OTM_API_KEY}`;
-
-    const otmRes = await fetch(otmUrl);
-    
-    if (!otmRes.ok) {
-      const txt = await otmRes.text().catch(() => "");
-      return res.status(502).json({ message: "Eroare la OpenTripMap API.", details: txt });
-    }
+      `&limit=500` +
+      `&apikey=${OTM_API_KEY}`
+    );
+    if (!otmRes.ok)
+      return res.status(502).json({ message: "Eroare la OpenTripMap API." });
 
     const places = await otmRes.json();
-
-    if (places.error) {
-       return res.status(400).json({ message: "Eroare de la furnizorul de atractii", details: places.error });
-    }
-
     const placesArray = Array.isArray(places) ? places : (places.features || []);
 
+    const seen = new Set();
+
     const results = placesArray
-      .filter((p) => (p.name || (p.properties && p.properties.name)))
+      .filter((p) => {
+        const name = p.name || (p.properties?.name);
+        if (!name) return false;
+        const key = name.toLowerCase().substring(0, 20);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => {
+        const rateA = Number(a.rate ?? a.properties?.rate ?? 0);
+        const rateB = Number(b.rate ?? b.properties?.rate ?? 0);
+        return rateB - rateA;
+      })
       .slice(0, 10)
       .map((p) => ({
-        xid: p.xid || (p.properties && p.properties.xid),
-        name: p.name || (p.properties && p.properties.name),
-        kinds: p.kinds || (p.properties && p.properties.kinds) || "",
-        rate: p.rate || (p.properties && p.properties.rate) || 0,
-        lat: p.point?.lat || (p.geometry && p.geometry.coordinates[1]) || null,
-        lon: p.point?.lon || (p.geometry && p.geometry.coordinates[0]) || null,
+        xid: p.xid || p.properties?.xid,
+        name: p.name || p.properties?.name,
+        kinds: p.kinds || p.properties?.kinds || "",
+        rate: p.rate || p.properties?.rate || 0,
+        lat: p.point?.lat || p.geometry?.coordinates[1] || null,
+        lon: p.point?.lon || p.geometry?.coordinates[0] || null,
       }));
 
     return res.json(results);

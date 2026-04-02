@@ -261,3 +261,43 @@
 .btn-edit-map:hover {
     background: rgba(255, 255, 255, 0.1);
 }
+
+.flights-entry {
+    display: flex;
+    justify-content: center;
+    margin: 28px 0 10px;
+}
+
+.btn-explore-entry {
+    background: linear-gradient(135deg, #766fb5, #5b4b8a);
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 14px 26px;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    box-shadow: 0 8px 22px rgba(118, 111, 181, 0.28);
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-explore-entry:hover {
+    transform: translateY(-2px) scale(1.02);
+    background: linear-gradient(135deg, #887fd1, #6a58a1);
+    box-shadow: 0 12px 28px rgba(118, 111, 181, 0.4);
+}
+
+.btn-explore-entry:active {
+    transform: translateY(0) scale(0.99);
+}
+
+.btn-explore-entry:focus {
+    outline: none;
+    box-shadow:
+        0 0 0 3px rgba(118, 111, 181, 0.25),
+        0 10px 24px rgba(118, 111, 181, 0.35);
+}

@@ -7,7 +7,7 @@ import MapPage from "./pages/MapPage";
 import ItinerariesPage from "./pages/ItinerariesPage";
 import DashboardPage from "./pages/DashboardPage";
 import ProfilePage from './pages/ProfilePage';
-
+import FlightExplorePage from './pages/FlightExplorePage';
 function Layout({ children }) {
   return <>{children}</>;
 }
@@ -31,6 +31,7 @@ export default function App() {
         <Route path="/itineraries/new" element={<ItinerariesPage />} />
         <Route path="/itineraries/:id" element={<ItinerariesPage />} />
         <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+        <Route path="/flights/explore" element={<FlightExplorePage />} />
         <Route
           path="/dashboard"
           element={

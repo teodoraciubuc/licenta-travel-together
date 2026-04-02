@@ -166,7 +166,11 @@ const DashboardPage = () => {
                         <button className="btn-edit-map" onClick={() => navigate('/map')}>✏️ Editează harta</button>
                     </div>
                 </section>
-
+                <section className="flights-entry">
+                    <button onClick={() => navigate('/flights/explore')} className="btn-explore-entry">
+                        ✈️ Explorează zboruri ieftine
+                    </button>
+                </section>
                 <section className="offers-section">
                     <h3>You might be interested in:</h3>
                     <div className="offers-grid">

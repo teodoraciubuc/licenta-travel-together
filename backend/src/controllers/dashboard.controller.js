@@ -108,5 +108,138 @@ async function getDashboard(req, res) {
     return res.status(500).json({ message: "Error fetching dashboard data" });
   }
 }
+const AIRPORT_COORDS = {
+  AMS: { lat: 52.3086, lon: 4.7639, city: 'Amsterdam' },
+  ATH: { lat: 37.9364, lon: 23.9445, city: 'Atena' },
+  BCN: { lat: 41.2974, lon: 2.0833, city: 'Barcelona' },
+  BER: { lat: 52.3667, lon: 13.5033, city: 'Berlin' },
+  BRU: { lat: 50.9010, lon: 4.4844, city: 'Bruxelles' },
+  BTS: { lat: 48.1702, lon: 17.2127, city: 'Bratislava' },
+  BUD: { lat: 47.4369, lon: 19.2556, city: 'Budapest' },
+  CDG: { lat: 49.0097, lon: 2.5479, city: 'Paris' },
+  CPH: { lat: 55.6180, lon: 12.6560, city: 'Copenhaga' },
+  DUB: { lat: 53.4213, lon: -6.2700, city: 'Dublin' },
+  FCO: { lat: 41.8003, lon: 12.2389, city: 'Roma' },
+  FRA: { lat: 50.0379, lon: 8.5622, city: 'Frankfurt' },
+  HEL: { lat: 60.3172, lon: 24.9633, city: 'Helsinki' },
+  IST: { lat: 41.2608, lon: 28.7418, city: 'Istanbul' },
+  LGW: { lat: 51.1537, lon: -0.1821, city: 'Londra' },
+  LHR: { lat: 51.4775, lon: -0.4614, city: 'Londra' },
+  LIS: { lat: 38.7756, lon: -9.1354, city: 'Lisabona' },
+  MAD: { lat: 40.4719, lon: -3.5626, city: 'Madrid' },
+  MAN: { lat: 53.3537, lon: -2.2750, city: 'Manchester' },
+  MLA: { lat: 35.8575, lon: 14.4775, city: 'Malta' },
+  MUC: { lat: 48.3537, lon: 11.7750, city: 'München' },
+  MXP: { lat: 45.6306, lon: 8.7281, city: 'Milano' },
+  NAP: { lat: 40.8860, lon: 14.2908, city: 'Napoli' },
+  NCE: { lat: 43.6584, lon: 7.2159, city: 'Nisa' },
+  OPO: { lat: 41.2481, lon: -8.6814, city: 'Porto' },
+  OSL: { lat: 60.1939, lon: 11.1004, city: 'Oslo' },
+  OTP: { lat: 44.5711, lon: 26.0850, city: 'București' },
+  PMI: { lat: 39.5517, lon: 2.7388, city: 'Palma de Mallorca' },
+  PRG: { lat: 50.1008, lon: 14.2600, city: 'Praga' },
+  RIX: { lat: 56.9236, lon: 23.9711, city: 'Riga' },
+  SKG: { lat: 40.5197, lon: 22.9709, city: 'Salonic' },
+  SOF: { lat: 42.6967, lon: 23.4114, city: 'Sofia' },
+  SPU: { lat: 43.5389, lon: 16.2978, city: 'Split' },
+  STN: { lat: 51.8850, lon: 0.2350, city: 'Londra' },
+  TLL: { lat: 59.4133, lon: 24.8328, city: 'Tallinn' },
+  VCE: { lat: 45.5053, lon: 12.3519, city: 'Veneția' },
+  VIE: { lat: 48.1103, lon: 16.5697, city: 'Viena' },
+  VLC: { lat: 39.4893, lon: -0.4816, city: 'Valencia' },
+  WAW: { lat: 52.1672, lon: 20.9679, city: 'Varșovia' },
+  ZRH: { lat: 47.4647, lon: 8.5492, city: 'Zürich' },
+  DXB: { lat: 25.2532, lon: 55.3657, city: 'Dubai' },
+  HRG: { lat: 27.1783, lon: 33.7994, city: 'Hurghada' },
+  SSH: { lat: 27.9773, lon: 34.3950, city: 'Sharm el-Sheikh' },
+  RAK: { lat: 31.6069, lon: -8.0363, city: 'Marrakech' },
+  TUN: { lat: 36.8510, lon: 10.2272, city: 'Tunis' },
+};
 
-module.exports = { getDashboard };
+const AMADEUS_BASE = 'https://test.api.amadeus.com';
+
+async function getAmadeusToken() {
+  const res = await fetch(`${AMADEUS_BASE}/v1/security/oauth2/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=client_credentials&client_id=${process.env.AMADEUS_API_KEY}&client_secret=${process.env.AMADEUS_API_SECRET}`,
+  });
+  const data = await res.json();
+  if (!data.access_token) throw new Error('Amadeus auth failed');
+  return data.access_token;
+}
+
+async function getFlightExplore(req, res) {
+  try {
+    const { origin = 'OTP', oneWay = 'false' } = req.query;
+
+    const POPULAR_FROM_RO = [
+      { destination: 'BCN', price: 89 },
+      { destination: 'MAD', price: 95 },
+      { destination: 'FCO', price: 67 },
+      { destination: 'VIE', price: 45 },
+      { destination: 'PRG', price: 52 },
+      { destination: 'BUD', price: 38 },
+      { destination: 'BTS', price: 42 },
+      { destination: 'WAW', price: 55 },
+      { destination: 'AMS', price: 110 },
+      { destination: 'CDG', price: 98 },
+      { destination: 'LGW', price: 87 },
+      { destination: 'MUC', price: 72 },
+      { destination: 'FRA', price: 78 },
+      { destination: 'ZRH', price: 125 },
+      { destination: 'LIS', price: 115 },
+      { destination: 'ATH', price: 62 },
+      { destination: 'SKG', price: 58 },
+      { destination: 'IST', price: 70 },
+      { destination: 'DUB', price: 130 },
+      { destination: 'CPH', price: 118 },
+      { destination: 'OSL', price: 135 },
+      { destination: 'HEL', price: 128 },
+      { destination: 'MLA', price: 75 },
+      { destination: 'SPU', price: 55 },
+      { destination: 'NCE', price: 88 },
+      { destination: 'NAP', price: 72 },
+      { destination: 'PMI', price: 95 },
+      { destination: 'OPO', price: 108 },
+      { destination: 'VLC', price: 92 },
+      { destination: 'RAK', price: 145 },
+      { destination: 'TUN', price: 98 },
+      { destination: 'HRG', price: 135 },
+      { destination: 'SSH', price: 128 },
+      { destination: 'DXB', price: 285 },
+      { destination: 'TLL', price: 142 },
+      { destination: 'RIX', price: 138 },
+      { destination: 'SOF', price: 35 },
+    ];
+
+    const results = POPULAR_FROM_RO
+      .map(item => {
+        const coords = AIRPORT_COORDS[item.destination];
+        if (!coords) return null;
+
+        const variation = Math.floor(Math.random() * 20) - 10;
+        const price = Math.max(29, item.price + variation);
+
+        return {
+          destination: item.destination,
+          city: coords.city,
+          lat: coords.lat,
+          lon: coords.lon,
+          price,
+          currency: 'EUR',
+          departureDate: null,
+          returnDate: null,
+          origin,
+          bookingUrl: `https://www.momondo.ro/flights/${origin}-${item.destination}?lang=ro`,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.price - b.price);
+
+    return res.json(results);
+  } catch (error) {
+    return res.status(500).json({ message: 'Eroare.', details: error.message });
+  }
+}
+module.exports = { getDashboard,getFlightExplore };
