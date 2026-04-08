@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import QuestionnairePage from "./pages/QuestionnairePage";
-import RecommendationsPage from "./pages/RecommendationsPage";
 import MapPage from "./pages/MapPage";
 import ItinerariesPage from "./pages/ItinerariesPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -57,16 +56,7 @@ export default function App() {
           }
         />
 
-        <Route
-          path="/recommendations"
-          element={
-            <Layout>
-              <PrivateRoute>
-                <RecommendationsPage />
-              </PrivateRoute>
-            </Layout>
-          }
-        />
+        <Route path="/recommendations" element={<Navigate to="/dashboard" replace />} />
 
         <Route
           path="/map"
