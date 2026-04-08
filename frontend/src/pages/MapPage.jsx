@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useNavigate, NavLink } from 'react-router-dom';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../styles/Map.css';
 import europeGeoJson from '../data/europe.geo.json';
+import TopNav from '../components/TopNav';
 
 const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001';
 
@@ -147,8 +147,6 @@ function CountryPopup({ info, onClose, onSelect, existingStatus }) {
    MAIN PAGE
 ═══════════════════════════════════════════════════════════════ */
 const MapPage = () => {
-    const navigate = useNavigate();
-
     const [destinations, setDestinations] = useState([]);
     const [countries, setCountries] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -301,8 +299,6 @@ const MapPage = () => {
         }
     };
 
-    const handleLogout = () => { localStorage.clear(); navigate('/login'); };
-
     const popupExistingStatus = useMemo(() => {
         if (!popupInfo) return null;
         const d = (popupInfo.code ? countryStatusMap[popupInfo.code] : null) || countryStatusMap[popupInfo.name?.trim().toLowerCase()];
@@ -335,15 +331,7 @@ const MapPage = () => {
 
     return (
         <div className="map-page-container">
-            <header className="dashboard-header">
-                <div className="brand"><h2>Travel Together</h2></div>
-                <nav className="nav-menu">
-                    <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>Dashboard</NavLink>
-                    <NavLink to="/map" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>My Map</NavLink>
-                    <NavLink to="/profile" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>Profile</NavLink>
-                    <span className="nav-item logout" onClick={handleLogout}>Logout</span>
-                </nav>
-            </header>
+            <TopNav />
 
             <main className="map-page-main">
                 <div className="map-page-left">

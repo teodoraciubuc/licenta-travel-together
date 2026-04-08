@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, NavLink, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../styles/Itineraries.css';
 import api from '../api/axios';
+import TopNav from '../components/TopNav';
 
 const CATEGORY_META = {
     breakfast: { label: 'Breakfast', color: '#f59e0b', icon: '☕' },
@@ -17,6 +18,20 @@ const CATEGORY_META = {
     hotel: { label: 'Hotel', color: '#a78bfa', icon: '🏨' },
     nature: { label: 'Nature', color: '#22c55e', icon: '🌿' },
     other: { label: 'Other', color: '#94a3b8', icon: '📍' },
+};
+
+const inferCategoryFromKinds = (kinds) => {
+    const normalized = String(kinds || '').toLowerCase();
+
+    if (!normalized) return 'other';
+    if (normalized.includes('museum') || normalized.includes('historic') || normalized.includes('architecture') || normalized.includes('cultural')) return 'culture';
+    if (normalized.includes('restaurant') || normalized.includes('foods') || normalized.includes('cafe') || normalized.includes('bakery')) return 'breakfast';
+    if (normalized.includes('hotel') || normalized.includes('hostel') || normalized.includes('apartment') || normalized.includes('accommodation') || normalized.includes('accomodation')) return 'hotel';
+    if (normalized.includes('beach') || normalized.includes('natural') || normalized.includes('park') || normalized.includes('garden') || normalized.includes('water')) return 'nature';
+    if (normalized.includes('transport') || normalized.includes('station') || normalized.includes('airport') || normalized.includes('railway')) return 'transport';
+    if (normalized.includes('nightlife') || normalized.includes('amusement') || normalized.includes('shop') || normalized.includes('mall')) return 'leisure';
+
+    return 'other';
 };
 
 const fmtDate = (iso) => {
@@ -60,8 +75,8 @@ function MapFitter({ points }) {
     return null;
 }
 
-function CreateTripModal({ onCreated, onCancel }) {
-    const [form, setForm] = useState({ name: '', destination: '', startDate: '', endDate: '' });
+function CreateTripModal({ onCreated, initialData = {} }) {
+    const [form, setForm] = useState({ name: '', destination: initialData.destination || '', startDate: '', endDate: '' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -120,7 +135,6 @@ function CreateTripModal({ onCreated, onCancel }) {
                 {error && <p className="itin-error">{error}</p>}
 
                 <div className="itin-modal-actions">
-                    <button className="itin-btn-ghost" onClick={onCancel}>Anuleaza</button>
                     <button className="itin-btn-primary" onClick={handleSubmit} disabled={loading}>
                         {loading ? 'Se creeaza...' : 'Creeaza itinerarul'}
                     </button>
@@ -130,7 +144,7 @@ function CreateTripModal({ onCreated, onCancel }) {
     );
 }
 
-function AddStopModal({ dayIndex, dayDate, tripId, onAdded, onClose }) {
+function AddStopModal({ tripId, dayIndex, dayDate, onAdded, onClose }) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [selected, setSelected] = useState(null);
@@ -160,7 +174,9 @@ function AddStopModal({ dayIndex, dayDate, tripId, onAdded, onClose }) {
                 lat: selected.lat ?? selected.latitude ?? null,
                 lng: selected.lng ?? selected.longitude ?? null,
                 dayIndex,
-                ...form,
+                category: form.category,
+                time: form.time,
+                notes: form.notes,
             });
         } finally {
             setLoading(false);
@@ -192,23 +208,6 @@ function AddStopModal({ dayIndex, dayDate, tripId, onAdded, onClose }) {
                                 ))}
                             </ul>
                         )}
-                    </div>
-                </div>
-
-                <div className="itin-field">
-                    <label>Categorie</label>
-                    <div className="cat-grid">
-                        {Object.entries(CATEGORY_META).map(([k, v]) => (
-                            <button
-                                key={k}
-                                type="button"
-                                className={`cat-chip ${form.category === k ? 'cat-chip--active' : ''}`}
-                                style={form.category === k ? { borderColor: v.color, background: `${v.color}22`, color: v.color } : {}}
-                                onClick={() => setForm((p) => ({ ...p, category: k }))}
-                            >
-                                {v.icon} {v.label}
-                            </button>
-                        ))}
                     </div>
                 </div>
 
@@ -292,12 +291,11 @@ function InviteModal({ tripId, onClose }) {
     );
 }
 
-function RecommendationsSection({ tripId, selectedDay, onAdded }) {
+function RecommendationsSection({ tripId, selectedDay, onAdded, tripStops = [] }) {
     const [recs, setRecs] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [addingXid, setAddingXid] = useState(null);
-    const [addedXids, setAddedXids] = useState(new Set());
 
     useEffect(() => {
         if (!tripId) return;
@@ -314,15 +312,16 @@ function RecommendationsSection({ tripId, selectedDay, onAdded }) {
     const handleAdd = async (rec) => {
         setAddingXid(rec.xid);
         try {
+            const mappedCategory = inferCategoryFromKinds(rec.kinds);
             const { data } = await api.post(`/itineraries/${tripId}/items`, {
                 name: rec.name,
                 lat: rec.lat,
                 lon: rec.lon,
                 kinds: rec.kinds,
                 xid: rec.xid,
+                category: mappedCategory,
                 day_number: selectedDay + 1,
             });
-            setAddedXids((prev) => new Set([...prev, rec.xid]));
             if (onAdded) onAdded(data, selectedDay);
         } catch (e) {
             console.error('addItem error:', e);
@@ -330,15 +329,6 @@ function RecommendationsSection({ tripId, selectedDay, onAdded }) {
             setAddingXid(null);
         }
     };
-    const fmtKinds = (kinds) => {
-        if (!kinds) return '';
-        return kinds
-            .split(',')
-            .slice(0, 2)
-            .map((k) => k.trim().charAt(0).toUpperCase() + k.trim().slice(1))
-            .join(' · ');
-    };
-
     if (loading) {
         return (
             <div className="itin-recs-section">
@@ -377,12 +367,11 @@ function RecommendationsSection({ tripId, selectedDay, onAdded }) {
 
             <div className="itin-recs-grid">
                 {recs.map((rec) => {
-                    const isAdded = addedXids.has(rec.xid);
+                    const isAdded = tripStops.some(stop => stop.name === rec.name);
                     const isAdding = addingXid === rec.xid;
 
                     return (
                         <div key={rec.xid} className={`itin-rec-card ${isAdded ? 'itin-rec-card--added' : ''}`}>
-                            <div className="itin-rec-kinds">{fmtKinds(rec.kinds) || 'Attractie'}</div>
                             <h4 className="itin-rec-name">{rec.name}</h4>
                             {rec.rate > 0 && (
                                 <div className="itin-rec-rate">
@@ -407,13 +396,12 @@ function RecommendationsSection({ tripId, selectedDay, onAdded }) {
 const ItinerariesPage = () => {
     const navigate = useNavigate();
     const { id } = useParams();
-
+    const location = useLocation();
     const [trip, setTrip] = useState(null);
     const [loading, setLoading] = useState(!!id && id !== 'new');
     const [showCreate, setShowCreate] = useState(!id || id === 'new');
     const [selectedDay, setSelectedDay] = useState(0);
     const [showAddStop, setShowAddStop] = useState(false);
-    const [showInvite, setShowInvite] = useState(false);
     const [aiSuggestion, setAiSug] = useState(null);
     const [saving, setSaving] = useState(false);
     const [editingName, setEditingName] = useState(false);
@@ -434,13 +422,21 @@ const ItinerariesPage = () => {
         })();
     }, [id, navigate]);
 
+    const initialData = {
+        destination: location.state?.city
+            ? `${location.state.city}${location.state.country ? ', ' + location.state.country : ''}`
+            : '',
+    };
     const days = useMemo(() => {
         if (!trip) return [];
         const n = diffDays(trip.startDate, trip.endDate);
         return Array.from({ length: n }, (_, i) => ({
             date: addDays(trip.startDate, i),
             stops: (trip.stops || [])
-                .filter((s) => Number(s.dayIndex) === i)
+                .filter((s) => {
+                    const indexCalculat = s.day_number !== undefined ? (Number(s.day_number) - 1) : Number(s.dayIndex);
+                    return indexCalculat === i;
+                })
                 .sort((a, b) => (a.time || '').localeCompare(b.time || '')),
         }));
     }, [trip]);
@@ -454,8 +450,8 @@ const ItinerariesPage = () => {
     const mapPoints = useMemo(() => {
         if (!days[selectedDay]) return [];
         return days[selectedDay].stops
-            .filter((s) => s.lat != null && s.lng != null)
-            .map((s) => [parseFloat(s.lat), parseFloat(s.lng)]);
+            .filter((s) => s.lat != null && (s.lng != null || s.lon != null))
+            .map((s) => [parseFloat(s.lat), parseFloat(s.lng ?? s.lon)]);
     }, [days, selectedDay]);
 
     const handleCreated = (data) => {
@@ -503,14 +499,25 @@ const ItinerariesPage = () => {
         finally { setSaving(false); }
     };
 
+    const handleBookAccommodations = () => {
+        navigate('/accommodations', {
+            state: {
+                destination: trip?.destination || '',
+                checkin: trip?.startDate || '',
+                checkout: trip?.endDate || '',
+            },
+        });
+    };
+
     const handleRecAdded = (newItem, dayIdx) => {
+        const mappedCategory = newItem.category || inferCategoryFromKinds(newItem.kinds);
         const newStop = {
             id: newItem.id,
             name: newItem.name,
             lat: newItem.lat,
             lng: newItem.lon,
             dayIndex: dayIdx,
-            category: 'culture',
+            category: mappedCategory,
             time: '12:00',
             done: false
         };
@@ -522,8 +529,6 @@ const ItinerariesPage = () => {
 
         setAiSug({ text: `"${newItem.name}" a fost adaugat in Ziua ${dayIdx + 1}!` });
     };
-    const handleLogout = () => { localStorage.clear(); navigate('/login'); };
-
     if (loading) {
         return (
             <div className="itin-loading">
@@ -535,30 +540,19 @@ const ItinerariesPage = () => {
 
     return (
         <>
-            <header className="dashboard-header">
-                <div className="brand"><h2>Travel Together</h2></div>
-                <nav className="nav-menu">
-                    <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>Dashboard</NavLink>
-                    <NavLink to="/map" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>My Map</NavLink>
-                    <NavLink to="/profile" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>Profile</NavLink>
-                    <span className="nav-item logout" onClick={handleLogout}>Logout</span>
-                </nav>
-            </header>
+            <TopNav />
 
-            {showCreate && <CreateTripModal onCreated={handleCreated} onCancel={() => navigate('/dashboard')} />}
+            {showCreate && <CreateTripModal onCreated={handleCreated} onCancel={() => navigate('/dashboard')} initialData={initialData} />}
 
             {showAddStop && trip && (
                 <AddStopModal
+                    tripId={trip.id}
                     dayIndex={selectedDay}
                     dayDate={days[selectedDay]?.date}
-
                     onAdded={handleAddStop}
                     onClose={() => setShowAddStop(false)}
                 />
             )}
-
-            {showInvite && trip && <InviteModal tripId={trip.id} onClose={() => setShowInvite(false)} />}
-
             {trip && (
                 <div className="itin-page">
                     <div className="itin-page-header">
@@ -594,7 +588,7 @@ const ItinerariesPage = () => {
                                     <div className="itin-progress-fill" style={{ width: `${progress}%` }} />
                                 </div>
                             </div>
-                            <button className="itin-btn-ghost" onClick={() => setShowInvite(true)}>👥 Invita</button>
+                            <button className="itin-btn-ghost" onClick={handleBookAccommodations}>Book your accommodations</button>
                             <button className="itin-btn-primary" onClick={handleSave} disabled={saving}>
                                 {saving ? '...' : '💾 Salveaza'}
                             </button>
@@ -650,9 +644,6 @@ const ItinerariesPage = () => {
                                                 </div>
                                                 <div className="stop-content">
                                                     <div className="stop-header">
-                                                        <span className="stop-cat" style={{ background: `${meta.color}22`, color: meta.color, borderColor: `${meta.color}44` }}>
-                                                            {meta.icon} {meta.label}
-                                                        </span>
                                                         <button className="stop-remove" onClick={() => handleRemoveStop(stop.id)}>✕</button>
                                                     </div>
                                                     <h4 className="stop-name">{stop.name}</h4>
@@ -692,14 +683,14 @@ const ItinerariesPage = () => {
                                     />
                                 )}
                                 {(days[selectedDay]?.stops || [])
-                                    .filter((s) => s.lat != null && s.lng != null)
+                                    .filter((s) => s.lat != null && (s.lng != null || s.lon != null))
                                     .map((stop, idx) => {
+                                        const validLng = stop.lng ?? stop.lon;
                                         const meta = CATEGORY_META[stop.category] || CATEGORY_META.other;
                                         return (
-                                            <Marker key={stop.id} position={[parseFloat(stop.lat), parseFloat(stop.lng)]} icon={makeIcon(idx + 1, meta.color)}>
+                                            <Marker key={stop.id} position={[parseFloat(stop.lat), parseFloat(validLng)]} icon={makeIcon(idx + 1, meta.color)}>
                                                 <Popup>
                                                     <strong>{stop.name}</strong><br />
-                                                    <small>{meta.icon} {meta.label}</small><br />
                                                     {stop.time && <small>🕐 {stop.time}</small>}
                                                 </Popup>
                                             </Marker>
@@ -717,6 +708,7 @@ const ItinerariesPage = () => {
                         tripId={trip.id}
                         selectedDay={selectedDay}
                         onAdded={handleRecAdded}
+                        tripStops={trip.stops || []}
                     />
                 </div>
             )}

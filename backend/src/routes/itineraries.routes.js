@@ -8,4 +8,6 @@ router.get('/:id', auth, itinerariesController.getTripById);
 router.get('/:id/recommendations', auth, itinerariesController.getRecommendations);
 router.post('/:id/items',  auth, itinerariesController.addItem);
 router.get('/:id/search-poi', auth, itinerariesController.searchPOI);
+router.delete('/:id/stops/:itemId', auth, itinerariesController.removeItem);
+router.put('/:id', auth, itinerariesController.updateTrip);
 module.exports = router;

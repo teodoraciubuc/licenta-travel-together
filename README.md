@@ -1,84 +1,115 @@
-# 🎓 Licență ASE – „Travel Together: Web Application for Travel Management & Personalized Recommendations”
+# Licenta ASE - Travel Together
 
-## 📌 Descriere generală
+## Descriere generala
 
-**Travel Together** este o aplicație web ce își propune să integreze într-o singură platformă:
+Travel Together este o aplicatie web pentru planificarea calatoriilor si recomandari personalizate. Proiectul reuneste intr-o singura platforma:
 
-- managementul călătoriilor,
-- recomandări personalizate în funcție de preferințele utilizatorului,
-- vizualizarea destinațiilor vizitate pe o hartă interactivă,
-- un modul AI chatbot care poate oferi răspunsuri personalizate despre destinații.
+- autentificare si profil utilizator
+- chestionar de preferinte
+- recomandari de destinatii
+- harta personala cu tari si destinatii marcate
+- creare si administrare de itinerarii
+- explorare de zboruri
+- cautare de cazari prin linkuri externe
 
-Proiectul se bazează pe identificarea unei nevoi reale: utilizatorii folosesc în prezent mai multe aplicații separate pentru informații, rezervări, hărți, inspirație și recomandări. Această fragmentare creează dificultăți în planificarea eficientă a unei călătorii.  
-Scopul aplicației este **unificarea acestui proces** într-o platformă coerentă și inteligentă.
-
-Aplicația a fost dezvoltată ca parte a lucrării de licență la **ASE – Facultatea CSIE**, specializarea **Informatică Economică**.
-
----
-
-## 🌐 Frontend
-
-- **HTML5** – structurarea interfeței
-- **CSS3**
-- **Bootstrap 5** – layout responsive
-- **JavaScript** – funcționalități dinamice
-- **Leaflet.js** – pentru harta interactivă
-- **OpenStreetMap** – furnizor de hartă gratuit
-
-## 🖥 Backend
-
-- **Node.js & Express** – mediul de rulare si framework-ul pentru server[cite: 972].
-- **JWT (JSON Web Tokens)** – securizarea rutelor si autentificarea utilizatorilor[cite: 532, 801].
-- **Bcrypt** – hashing pentru stocarea securizata a parolelor[cite: 801, 1746].
-- **Motor de recomandare** – algoritm de filtrare bazat pe continut (Content-based filtering)[cite: 120, 126].
-
-## 🗄 Bază de date
-
-- **MySQL (XAMPP)** – stocarea utilizatorilor, destinațiilor, preferințelor și recenziilor
-- Interogări optimizate pentru CRUD
+Aplicatia este dezvoltata in contextul lucrarii de licenta din cadrul ASE - Facultatea CSIE.
 
 ---
 
-## 🤖 AI (Chatbot)
+## Stack folosit in proiect
 
-- Modul AI bazat pe un LLM (Large Language Model)
-- Răspunsuri contextuale despre destinații
-- Poate sugera locuri, explica recomandări sau ghida utilizatorul
-- Extensie opțională a aplicației (nivel prototip)
+### Frontend
+
+- React
+- Vite
+- React Router
+- Axios
+- React Leaflet + Leaflet
+- CSS custom
+
+### Backend
+
+- Node.js
+- Express
+- PostgreSQL prin `pg`
+- JWT pentru autentificare
+- bcrypt / bcryptjs pentru parole
+- node-fetch pentru integrari externe
+
+### Baza de date
+
+- PostgreSQL
+
+---
+
+## Module existente in cod
+
+### Autentificare
+
+- login
+- register
+- rute protejate cu JWT
+
+### Dashboard
+
+- afisare recomandari
+- acces rapid catre harta, itinerarii si zboruri
+
+### Questionnaire
+
+- colectare preferinte de calatorie
+- salvare preferinte pentru recomandari personalizate
+
+### Recommendations
+
+- recomandari de destinatii pe baza preferintelor salvate
+
+### My Map
+
+- cautare destinatii
+- salvare statusuri precum `visited`, `planned`, `wishlist`
+- rating pentru destinatiile vizitate
+- adaugare manuala de destinatii
+
+### Itineraries
+
+- creare itinerariu cu destinatie si interval de date
+- adaugare opriri manuale
+- recomandari de puncte de interes pentru itinerariu
+- salvare opriri in baza de date
+
+### Flights
+
+- pagina de explorare zboruri
+- filtrare dupa origine si alte optiuni
+
+### Accommodations
+
+- pagina dedicata cautarii de cazari
+- integrare prin linkuri externe catre Booking si Airbnb
+
+### Profile
+
+- statistici de utilizator
+- editare username
+- schimbare parola
 
 ---
 
-## 🗺 Module pentru hartă
+## API routes existente
 
-- **Leaflet.js + GeoJSON** – evidențierea țărilor vizitate
-- Marcaje dinamice pentru destinațiile recomandate
-- Posibilitatea de a vizualiza trasee sau zone de interes
+In backend exista in prezent urmatoarele grupuri de rute:
 
----
-
-# 🚀 Funcționalități cheie
-
-### ✔ Managementul utilizatorilor
-
-- înregistrare / autentificare
-- editare profil + preferințe de călătorie
-
-### ✔ Sistem recomandări personalizate
-
-- scorare automată în funcție de preferințele selectate
-- generarea unei liste de destinații recomandate
-- integrare cu harta
-
-### ✔ Harta interactivă
-
-- marcarea destinațiilor vizitate
-- evidențierea recomandărilor
-- afișarea informațiilor detaliate
-
-### ✔ Chatbot AI
-
-- recomandări conversaționale
-- explicații despre destinații
-- suport tip „asistent de călătorie”
+- `auth`
+- `dashboard`
+- `itineraries`
+- `map`
+- `questionnaire`
+- `recommendations`
 
 ---
+
+## Observatii
+
+- README-ul a fost actualizat pentru a reflecta structura si tehnologiile care apar acum in cod.
+- Modulul AI chatbot mentionat anterior nu este documentat aici, deoarece nu apare ca functionalitate implementata clar in structura actuala a proiectului.

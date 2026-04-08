@@ -1,0 +1,22 @@
+.recommendations-page {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #0b1020 0%, #0f172a 100%);
+    color: #f8fafc;
+}
+
+.recommendations-main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.recommendations-main h1 {
+    margin: 0 0 0.75rem;
+    font-size: 2rem;
+}
+
+.recommendations-main p {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 1rem;
+}

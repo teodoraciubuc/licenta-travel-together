@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, NavLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import '../styles/Profile.css';
+import TopNav from '../components/TopNav';
 
 const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001';
 
@@ -135,11 +136,6 @@ export default function ProfilePage() {
         }
     };
 
-    const handleLogout = () => {
-        localStorage.clear();
-        navigate('/login');
-    };
-
     const fmtDate = (iso) =>
         iso
             ? new Date(iso).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -148,15 +144,7 @@ export default function ProfilePage() {
     return (
         <div className="prof-page">
             {/* ── NAV ── */}
-            <header className="dashboard-header">
-                <div className="brand"><h2>Travel Together</h2></div>
-                <nav className="nav-menu">
-                    <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>Dashboard</NavLink>
-                    <NavLink to="/map" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>My Map</NavLink>
-                    <NavLink to="/profile" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>Profile</NavLink>
-                    <span className="nav-item logout" onClick={handleLogout}>Logout</span>
-                </nav>
-            </header>
+            <TopNav />
 
             <main className="prof-main">
 
@@ -375,7 +363,7 @@ export default function ProfilePage() {
                                     <p className="prof-muted">Ieși din contul tău pe acest dispozitiv.</p>
                                 </div>
                             </div>
-                            <button className="prof-btn-danger" onClick={handleLogout}>Logout</button>
+                            <button className="prof-btn-danger" onClick={() => { localStorage.clear(); navigate('/login'); }}>Logout</button>
                         </div>
                     </section>
 

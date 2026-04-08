@@ -1,9 +1,10 @@
 import React from 'react';
-import { useNavigate, NavLink, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../styles/Dashboard.css';
 import europeGeoJson from '../data/europe.geo.json';
+import TopNav from '../components/TopNav';
 
 const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001';
 
@@ -20,11 +21,6 @@ const DashboardPage = () => {
     const [loading, setLoading] = React.useState(true);
     const [offset, setOffset] = React.useState(0);
     const userName = localStorage.getItem('user_name') || 'Călătorule';
-
-    const handleLogout = () => {
-        localStorage.clear();
-        navigate('/login');
-    };
 
     const fetchDashboardData = async (currentOffset) => {
         try {
@@ -129,15 +125,7 @@ const DashboardPage = () => {
 
     return (
         <div className="dashboard-container">
-            <header className="dashboard-header">
-                <div className="brand"><h2>Travel Together</h2></div>
-                <nav className="nav-menu">
-                    <NavLink to="/dashboard" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>Dashboard</NavLink>
-                    <NavLink to="/map" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>My Map</NavLink>
-                    <NavLink to="/profile" className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}>Profile</NavLink>
-                    <span className="nav-item logout" onClick={handleLogout}>Logout</span>
-                </nav>
-            </header>
+            <TopNav />
 
             <main className="dashboard-main">
                 <section className="hero-section">

@@ -18,8 +18,59 @@ const TAG_TO_KINDS = {
   18: "amusements",
 };
 
+const MAP_STATUS_PRIORITY = {
+  wishlist: 1,
+  planned: 2,
+  visited: 3,
+};
+
+const ITINERARY_CATEGORIES = new Set([
+  "breakfast",
+  "brunch",
+  "lunch",
+  "dinner",
+  "culture",
+  "leisure",
+  "transport",
+  "hotel",
+  "nature",
+  "other",
+]);
+
 function getUserId(req) {
   return req.user?.userId || req.userId || req.user?.id;
+}
+
+function normalizeItineraryCategory(category) {
+  if (typeof category !== "string") return "other";
+
+  const normalized = category.trim().toLowerCase();
+  return ITINERARY_CATEGORIES.has(normalized) ? normalized : "other";
+}
+
+async function ensureDestinationPlannedForUser(userId, destinationId) {
+  const existingResult = await pool.query(
+    `SELECT id, status FROM "User_Map_Status" WHERE user_id = $1 AND destination_id = $2`,
+    [userId, destinationId]
+  );
+
+  if (existingResult.rows.length === 0) {
+    await pool.query(
+      `INSERT INTO "User_Map_Status" (user_id, destination_id, status) VALUES ($1, $2, $3)`,
+      [userId, destinationId, "planned"]
+    );
+    return;
+  }
+
+  const existingEntry = existingResult.rows[0];
+  const existingPriority = MAP_STATUS_PRIORITY[existingEntry.status] || 0;
+
+  if (MAP_STATUS_PRIORITY.planned > existingPriority) {
+    await pool.query(
+      `UPDATE "User_Map_Status" SET status = $1 WHERE id = $2`,
+      ["planned", existingEntry.id]
+    );
+  }
 }
 
 async function createTrip(req, res) {
@@ -92,10 +143,29 @@ async function getTripById(req, res) {
     }
 
     const trip = tripResult.rows[0];
+    const stopsResult = await pool.query(
+      `
+      SELECT 
+        i.id, 
+        i.itinerary_id, 
+        i.destination_id, 
+        i.day_number, 
+        i.order_index,
+        COALESCE(i.category, 'other') AS category,
+        d.name, 
+        d.latitude AS lat, 
+        d.longitude AS lon
+      FROM "Itinerary_Items" i
+      JOIN "Destinations" d ON i.destination_id = d.id
+      WHERE i.itinerary_id = $1
+      ORDER BY i.day_number ASC, i.order_index ASC
+      `,
+      [id]
+    );
 
     return res.json({
       ...trip,
-      stops: [],
+      stops: stopsResult.rows, 
     });
   } catch (error) {
     return res.status(500).json({ message: "Eroare interna server.", details: error.message });
@@ -188,12 +258,12 @@ async function addItem(req, res) {
     const userId = getUserId(req);
     const { id } = req.params;
     
-   const rawName = req.body.name || req.body.address || "Locatie noua";
+    const rawName = req.body.name || req.body.address || "Locatie noua";
     const name = String(rawName).trim();
     const lat = req.body.lat;
-    const lon = req.body.lon ?? req.body.lng; 
-    const kinds = req.body.kinds || req.body.category || null;
-    const xid = req.body.xid || null;
+    const lon = req.body.lon ?? req.body.lng;
+    const kinds = typeof req.body.kinds === "string" ? req.body.kinds : null;
+    const category = normalizeItineraryCategory(req.body.category);
     const dayNum = Number(req.body.day_number) || (Number(req.body.dayIndex) + 1) || 1;
 
     if (lat == null || lon == null) {
@@ -210,57 +280,33 @@ async function addItem(req, res) {
     }
 
     let destId;
-    const safeKinds = kinds ? String(kinds).substring(0, 200) : null;
     const parsedLat = parseFloat(lat) || 0;
     const parsedLon = parseFloat(lon) || 0;
+    const existing = await pool.query(
+      `
+      SELECT id FROM "Destinations"
+      WHERE LOWER(name) = LOWER($1)
+        AND ABS(latitude  - $2) < 0.01
+        AND ABS(longitude - $3) < 0.01
+      LIMIT 1
+      `,
+      [name, parsedLat, parsedLon]
+    );
 
-    if (xid) {
-      const existing = await pool.query(
-        `SELECT id FROM "Destinations" WHERE source = 'opentripmap' AND source_id = $1`,
-        [xid]
-      );
-
-      if (existing.rows.length > 0) {
-        destId = existing.rows[0].id;
-      } else {
-        const inserted = await pool.query(
-          `
-          INSERT INTO "Destinations" (name, country, latitude, longitude, source, source_id, kinds)
-          VALUES ($1, '', $2, $3, 'opentripmap', $4, $5)
-          RETURNING id
-          `,
-          [name, parsedLat, parsedLon, xid, safeKinds]
-        );
-        destId = inserted.rows[0].id;
-      }
+    if (existing.rows.length > 0) {
+      destId = existing.rows[0].id;
     } else {
-      const existing = await pool.query(
+      const inserted = await pool.query(
         `
-        SELECT id FROM "Destinations"
-        WHERE LOWER(name) = LOWER($1)
-          AND ABS(latitude  - $2) < 0.01
-          AND ABS(longitude - $3) < 0.01
-        LIMIT 1
+        INSERT INTO "Destinations" (name, country, latitude, longitude)
+        VALUES ($1, '', $2, $3)
+        RETURNING id
         `,
         [name, parsedLat, parsedLon]
       );
-
-      if (existing.rows.length > 0) {
-        destId = existing.rows[0].id;
-      } else {
-        const inserted = await pool.query(
-          `
-          INSERT INTO "Destinations" (name, country, latitude, longitude, kinds)
-          VALUES ($1, '', $2, $3, $4)
-          RETURNING id
-          `,
-          [name, parsedLat, parsedLon, safeKinds]
-        );
-        destId = inserted.rows[0].id;
-      }
+      destId = inserted.rows[0].id;
     }
 
-    // Stabileste ordinea in ziua respectiva
     const orderResult = await pool.query(
       `
       SELECT COALESCE(MAX(order_index), 0) + 1 AS next_order
@@ -273,19 +319,21 @@ async function addItem(req, res) {
 
     const itemResult = await pool.query(
       `
-      INSERT INTO "Itinerary_Items" (itinerary_id, destination_id, day_number, order_index)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, itinerary_id, destination_id, day_number, order_index
+      INSERT INTO "Itinerary_Items" (itinerary_id, destination_id, day_number, order_index, category)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, itinerary_id, destination_id, day_number, order_index, category
       `,
-      [id, destId, dayNum, nextOrder]
+      [id, destId, dayNum, nextOrder, category]
     );
+    await ensureDestinationPlannedForUser(userId, destId);
 
     return res.status(201).json({
       ...itemResult.rows[0],
       name: name,
       lat: parsedLat,
       lon: parsedLon,
-      kinds: safeKinds,
+      kinds,
+      category,
     });
   } catch (error) {
     console.error("addItem error backend:", error);
@@ -349,11 +397,90 @@ async function searchPOI(req, res) {
     return res.status(500).json({ message: "Eroare interna la cautare.", details: error.message });
   }
 }
+async function removeItem(req, res) {
+  try {
+    const userId = getUserId(req);
+    const { id, itemId } = req.params; 
 
+    const tripResult = await pool.query(
+      `SELECT id FROM "Itineraries" WHERE id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+
+    if (tripResult.rows.length === 0) {
+      return res.status(404).json({ message: "Itinerary not found." });
+    }
+
+    const deleteResult = await pool.query(
+      `DELETE FROM "Itinerary_Items" WHERE id = $1 AND itinerary_id = $2 RETURNING id`,
+      [itemId, id]
+    );
+
+    if (deleteResult.rows.length === 0) {
+      return res.status(404).json({ message: "Stop not found in this itinerary." });
+    }
+
+    return res.json({ message: "Stop removed successfully." });
+  } catch (error) {
+    console.error("removeItem error backend:", error);
+    return res.status(500).json({ message: "Internal server error.", details: error.message });
+  }
+}
+async function updateTrip(req, res) {
+  try {
+    const userId = getUserId(req);
+    const { id } = req.params;
+    const { name, destination, startDate, endDate, stops, items } = req.body;
+
+    const tripResult = await pool.query(
+      `SELECT id FROM "Itineraries" WHERE id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+
+    if (tripResult.rows.length === 0) {
+      return res.status(404).json({ message: "Itinerary not found." });
+    }
+
+    if (name || destination || startDate || endDate) {
+      await pool.query(
+        `UPDATE "Itineraries" 
+         SET title = COALESCE($1, title), 
+             destination = COALESCE($2, destination), 
+             start_date = COALESCE($3, start_date), 
+             end_date = COALESCE($4, end_date)
+         WHERE id = $5`,
+        [name || null, destination || null, startDate || null, endDate || null, id]
+      );
+    }
+
+    const stopsToUpdate = stops || items;
+    if (Array.isArray(stopsToUpdate)) {
+      for (let i = 0; i < stopsToUpdate.length; i++) {
+        const stop = stopsToUpdate[i];
+        const dayNum = stop.day_number || (stop.dayIndex !== undefined ? stop.dayIndex + 1 : 1);
+        const orderIdx = stop.order_index !== undefined ? stop.order_index : i;
+        
+        await pool.query(
+          `UPDATE "Itinerary_Items" 
+           SET day_number = $1, order_index = $2 
+           WHERE id = $3 AND itinerary_id = $4`,
+          [dayNum, orderIdx, stop.id, id]
+        );
+      }
+    }
+
+    return res.json({ message: "Itinerary updated successfully." });
+  } catch (error) {
+    console.error("updateTrip error backend:", error);
+    return res.status(500).json({ message: "Internal server error.", details: error.message });
+  }
+}
 module.exports = {
   createTrip,
   getTripById,
   getRecommendations,
   addItem,
-  searchPOI
+  searchPOI,
+  removeItem,
+  updateTrip
 };

@@ -8,6 +8,7 @@ import ItinerariesPage from "./pages/ItinerariesPage";
 import DashboardPage from "./pages/DashboardPage";
 import ProfilePage from './pages/ProfilePage';
 import FlightExplorePage from './pages/FlightExplorePage';
+import AccommodationsPage from './pages/AccommodationsPage';
 function Layout({ children }) {
   return <>{children}</>;
 }
@@ -28,10 +29,12 @@ export default function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/itineraries/new" element={<ItinerariesPage />} />
-        <Route path="/itineraries/:id" element={<ItinerariesPage />} />
+        <Route path="/itineraries/new" element={<PrivateRoute><ItinerariesPage /></PrivateRoute>} />
+        <Route path="/itineraries/:id" element={<PrivateRoute><ItinerariesPage /></PrivateRoute>} />
         <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
-        <Route path="/flights/explore" element={<FlightExplorePage />} />
+        <Route path="/flights/explore" element={<PrivateRoute><FlightExplorePage /></PrivateRoute>} />
+        <Route path="/accommodations" element={<PrivateRoute><AccommodationsPage /></PrivateRoute>} />
+        <Route path="/stays" element={<Navigate to="/accommodations" replace />} />
         <Route
           path="/dashboard"
           element={

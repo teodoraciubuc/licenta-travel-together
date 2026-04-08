@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, NavLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../styles/FlightExplore.css';
+import TopNav from '../components/TopNav';
 
 const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001';
 
@@ -87,11 +88,6 @@ const FlightExplorePage = () => {
     const [selected, setSelected] = useState(null);
 
     const listRef = useRef(null);
-
-    const handleLogout = () => {
-        localStorage.clear();
-        navigate('/login');
-    };
 
     const fetchExplore = useCallback(async () => {
         setLoading(true);
@@ -210,38 +206,7 @@ const FlightExplorePage = () => {
 
     return (
         <div className="explore-page">
-            <header className="dashboard-header">
-                <div className="brand">
-                    <h2>Travel Together</h2>
-                </div>
-
-                <nav className="nav-menu">
-                    <NavLink
-                        to="/dashboard"
-                        className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
-                    >
-                        Dashboard
-                    </NavLink>
-
-                    <NavLink
-                        to="/map"
-                        className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
-                    >
-                        My Map
-                    </NavLink>
-
-                    <NavLink
-                        to="/profile"
-                        className={({ isActive }) => (isActive ? 'nav-item active' : 'nav-item')}
-                    >
-                        Profile
-                    </NavLink>
-
-                    <span className="nav-item logout" onClick={handleLogout}>
-                        Logout
-                    </span>
-                </nav>
-            </header>
+            <TopNav />
 
             <div className="explore-body">
                 <aside className="explore-sidebar">
