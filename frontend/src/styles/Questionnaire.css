@@ -2,7 +2,7 @@
 
 .q-wrapper {
     min-height: 100vh;
-    background: linear-gradient(135deg, #0b1320, #0f1a2d);
+    background: var(--app-ambient-bg);
     display: flex;
     flex-direction: column;
     color: white;
@@ -60,11 +60,12 @@
 .q-card {
     width: 700px;
     min-height: 350px;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(15, 23, 42, 0.78);
     backdrop-filter: blur(20px);
     border-radius: 28px;
     padding: 50px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    box-shadow: var(--app-panel-shadow);
     text-align: center;
     animation: fadeIn 0.3s ease;
 }

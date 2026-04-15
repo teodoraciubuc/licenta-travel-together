@@ -36,7 +36,7 @@ const inferCategoryFromKinds = (kinds) => {
 
 const fmtDate = (iso) => {
     if (!iso) return '';
-    return new Date(iso).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 };
 
 const diffDays = (start, end) => {
@@ -85,11 +85,11 @@ function CreateTripModal({ onCreated, initialData = {} }) {
     const handleSubmit = async () => {
         const { name, startDate, endDate } = form;
         if (!name.trim() || !startDate || !endDate) {
-            setError('Completeaza toate campurile obligatorii.');
+            setError('Please complete all required fields.');
             return;
         }
         if (new Date(endDate) < new Date(startDate)) {
-            setError('Data de final trebuie sa fie dupa data de start.');
+            setError('The end date must be after the start date.');
             return;
         }
         setLoading(true);
@@ -97,8 +97,8 @@ function CreateTripModal({ onCreated, initialData = {} }) {
         try {
             const { data } = await api.post('/itineraries', form);
             onCreated(data);
-        } catch (e) {
-            setError(e.response?.data?.message || 'Eroare la creare.');
+        } catch {
+            setError('Could not create the itinerary.');
         } finally {
             setLoading(false);
         }
@@ -108,26 +108,26 @@ function CreateTripModal({ onCreated, initialData = {} }) {
         <div className="itin-overlay">
             <div className="itin-modal create-modal">
                 <div className="create-modal-bar" />
-                <h2 className="modal-title">Planifica o vacanta</h2>
-                <p className="modal-sub">Creeaza un itinerariu si organizeaza fiecare zi din calatorie.</p>
+                <h2 className="modal-title">Plan a trip</h2>
+                <p className="modal-sub">Create an itinerary and organize each day of your trip.</p>
 
                 <div className="itin-field">
-                    <label>Numele vacantei *</label>
-                    <input placeholder="ex: Summer Roadtrip 2025" value={form.name} onChange={set('name')} />
+                    <label>Trip name *</label>
+                    <input placeholder="e.g. Summer Roadtrip 2025" value={form.name} onChange={set('name')} />
                 </div>
 
                 <div className="itin-field">
-                    <label>Destinatie principala</label>
-                    <input placeholder="ex: Roma, Italia" value={form.destination} onChange={set('destination')} />
+                    <label>Main destination</label>
+                    <input placeholder="e.g. Rome, Italy" value={form.destination} onChange={set('destination')} />
                 </div>
 
                 <div className="itin-field-row">
                     <div className="itin-field">
-                        <label>Data de start *</label>
+                        <label>Start date *</label>
                         <input type="date" value={form.startDate} onChange={set('startDate')} />
                     </div>
                     <div className="itin-field">
-                        <label>Data de final *</label>
+                        <label>End date *</label>
                         <input type="date" value={form.endDate} onChange={set('endDate')} />
                     </div>
                 </div>
@@ -136,7 +136,7 @@ function CreateTripModal({ onCreated, initialData = {} }) {
 
                 <div className="itin-modal-actions">
                     <button className="itin-btn-primary" onClick={handleSubmit} disabled={loading}>
-                        {loading ? 'Se creeaza...' : 'Creeaza itinerarul'}
+                        {loading ? 'Creating...' : 'Create itinerary'}
                     </button>
                 </div>
             </div>
@@ -187,14 +187,14 @@ function AddStopModal({ tripId, dayIndex, dayDate, onAdded, onClose }) {
         <div className="itin-overlay" onClick={onClose}>
             <div className="itin-modal" onClick={(e) => e.stopPropagation()}>
                 <button className="itin-close-btn" onClick={onClose}>✕</button>
-                <h3 className="modal-title sm">Adauga o oprire</h3>
-                <p className="modal-sub">Ziua {dayIndex + 1} · {fmtDate(dayDate)}</p>
+                <h3 className="modal-title sm">Add a stop</h3>
+                <p className="modal-sub">Day {dayIndex + 1} - {fmtDate(dayDate)}</p>
 
                 <div className="itin-field">
-                    <label>Cauta locatie</label>
+                    <label>Search location</label>
                     <div className="search-wrap">
                         <input
-                            placeholder="Restaurant, muzeu, hotel..."
+                            placeholder="Restaurant, museum, hotel..."
                             value={selected ? selected.name : query}
                             onChange={(e) => { setQuery(e.target.value); setSelected(null); }}
                         />
@@ -213,19 +213,19 @@ function AddStopModal({ tripId, dayIndex, dayDate, onAdded, onClose }) {
 
                 <div className="itin-field-row">
                     <div className="itin-field">
-                        <label>Ora</label>
+                        <label>Time</label>
                         <input type="time" value={form.time} onChange={set('time')} />
                     </div>
                     <div className="itin-field" style={{ flex: 2 }}>
-                        <label>Notite (optional)</label>
-                        <input placeholder="ex: rezervare nr. 4521" value={form.notes} onChange={set('notes')} />
+                        <label>Notes (optional)</label>
+                        <input placeholder="e.g. booking no. 4521" value={form.notes} onChange={set('notes')} />
                     </div>
                 </div>
 
                 <div className="itin-modal-actions">
-                    <button className="itin-btn-ghost" onClick={onClose}>Anuleaza</button>
+                    <button className="itin-btn-ghost" onClick={onClose}>Cancel</button>
                     <button className="itin-btn-primary" disabled={!selected || loading} onClick={handleAdd}>
-                        {loading ? 'Se adauga...' : '+ Adauga oprire'}
+                        {loading ? 'Adding...' : '+ Add stop'}
                     </button>
                 </div>
             </div>
@@ -246,8 +246,8 @@ function InviteModal({ tripId, onClose }) {
         try {
             await api.post(`/itineraries/${tripId}/invite`, { email });
             setSent(true);
-        } catch (e) {
-            setError(e.response?.data?.message || 'Eroare la trimitere.');
+        } catch {
+            setError('Could not send the invite.');
         } finally {
             setLoading(false);
         }
@@ -257,21 +257,21 @@ function InviteModal({ tripId, onClose }) {
         <div className="itin-overlay" onClick={onClose}>
             <div className="itin-modal" onClick={(e) => e.stopPropagation()}>
                 <button className="itin-close-btn" onClick={onClose}>✕</button>
-                <h3 className="modal-title sm">Invita un prieten</h3>
-                <p className="modal-sub">Planificati impreuna acelasi itinerariu.</p>
+                <h3 className="modal-title sm">Invite a friend</h3>
+                <p className="modal-sub">Plan the same itinerary together.</p>
 
                 {sent ? (
                     <div className="invite-sent">
                         <span>🎉</span>
-                        <p>Invitatia a fost trimisa cu succes!</p>
+                        <p>The invitation was sent successfully!</p>
                     </div>
                 ) : (
                     <>
                         <div className="itin-field">
-                            <label>Adresa de email</label>
+                            <label>Email address</label>
                             <input
                                 type="email"
-                                placeholder="prieten@email.com"
+                                placeholder="friend@example.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleInvite()}
@@ -279,9 +279,9 @@ function InviteModal({ tripId, onClose }) {
                         </div>
                         {error && <p className="itin-error">{error}</p>}
                         <div className="itin-modal-actions">
-                            <button className="itin-btn-ghost" onClick={onClose}>Anuleaza</button>
+                            <button className="itin-btn-ghost" onClick={onClose}>Cancel</button>
                             <button className="itin-btn-primary" onClick={handleInvite} disabled={loading}>
-                                {loading ? 'Se trimite...' : 'Trimite invitatie'}
+                                {loading ? 'Sending...' : 'Send invite'}
                             </button>
                         </div>
                     </>
@@ -305,7 +305,7 @@ function RecommendationsSection({ tripId, selectedDay, onAdded, tripStops = [] }
 
         api.get(`/itineraries/${tripId}/recommendations`)
             .then(({ data }) => setRecs(Array.isArray(data) ? data : []))
-            .catch((e) => setError(e.response?.data?.message || 'Nu am putut incarca recomandarile.'))
+            .catch(() => setError("We couldn't load recommendations."))
             .finally(() => setLoading(false));
     }, [tripId]);
 
@@ -334,9 +334,9 @@ function RecommendationsSection({ tripId, selectedDay, onAdded, tripStops = [] }
             <div className="itin-recs-section">
                 <div className="itin-recs-header">
                     <span>✨</span>
-                    <h3>Recomandari pentru tine</h3>
+                    <h3>Recommendations for you</h3>
                 </div>
-                <p className="itin-recs-status">Se cauta atractii...</p>
+                <p className="itin-recs-status">Searching attractions...</p>
             </div>
         );
     }
@@ -346,7 +346,7 @@ function RecommendationsSection({ tripId, selectedDay, onAdded, tripStops = [] }
             <div className="itin-recs-section">
                 <div className="itin-recs-header">
                     <span>✨</span>
-                    <h3>Recomandari pentru tine</h3>
+                    <h3>Recommendations for you</h3>
                 </div>
                 <p className="itin-recs-status itin-recs-error">{error}</p>
             </div>
@@ -359,9 +359,9 @@ function RecommendationsSection({ tripId, selectedDay, onAdded, tripStops = [] }
         <div className="itin-recs-section">
             <div className="itin-recs-header">
                 <span>✨</span>
-                <h3>Recomandari pentru tine</h3>
+                <h3>Recommendations for you</h3>
                 <span className="itin-recs-subtitle">
-                    Atractii bazate pe preferintele tale · se adauga in Ziua {selectedDay + 1}
+                    Attractions based on your preferences - added to Day {selectedDay + 1}
                 </span>
             </div>
 
@@ -383,7 +383,7 @@ function RecommendationsSection({ tripId, selectedDay, onAdded, tripStops = [] }
                                 disabled={isAdded || isAdding}
                                 onClick={() => handleAdd(rec)}
                             >
-                                {isAdded ? '✓ Adaugat' : isAdding ? 'Se adauga...' : '+ Adauga in plan'}
+                                {isAdded ? 'Added' : isAdding ? 'Adding...' : '+ Add to plan'}
                             </button>
                         </div>
                     );
@@ -459,7 +459,7 @@ const ItinerariesPage = () => {
         setShowCreate(false);
         navigate(`/itineraries/${data.id}`, { replace: true });
         setTimeout(() => {
-            setAiSug({ text: 'Am gasit locatii populare in zona destinatiei tale. Poti adauga opriri din bara laterala!' });
+            setAiSug({ text: 'I found popular places around your destination. You can add stops from the sidebar!' });
         }, 1400);
     };
 
@@ -473,7 +473,7 @@ const ItinerariesPage = () => {
         }
         setShowAddStop(false);
         if ((days[selectedDay]?.stops.length || 0) >= 2) {
-            setAiSug({ text: 'Exista locuri apreciate de turisti intre opririle tale. Vrei mai multe sugestii?' });
+            setAiSug({ text: 'There are popular places between your stops. Want more suggestions?' });
         }
     };
 
@@ -527,13 +527,13 @@ const ItinerariesPage = () => {
             stops: [...(prev.stops || []), newStop]
         }));
 
-        setAiSug({ text: `"${newItem.name}" a fost adaugat in Ziua ${dayIdx + 1}!` });
+        setAiSug({ text: `"${newItem.name}" was added to Day ${dayIdx + 1}!` });
     };
     if (loading) {
         return (
             <div className="itin-loading">
                 <div className="itin-spinner" />
-                <p>Se incarca itinerarul...</p>
+                <p>Loading itinerary...</p>
             </div>
         );
     }
@@ -583,14 +583,14 @@ const ItinerariesPage = () => {
 
                         <div className="itin-header-actions">
                             <div className="itin-progress-wrap">
-                                <div className="itin-progress-label">{progress}% complet</div>
+                                <div className="itin-progress-label">{progress}% complete</div>
                                 <div className="itin-progress-bar">
                                     <div className="itin-progress-fill" style={{ width: `${progress}%` }} />
                                 </div>
                             </div>
                             <button className="itin-btn-ghost" onClick={handleBookAccommodations}>Book your accommodations</button>
                             <button className="itin-btn-primary" onClick={handleSave} disabled={saving}>
-                                {saving ? '...' : '💾 Salveaza'}
+                                {saving ? '...' : 'Save'}
                             </button>
                         </div>
                     </div>
@@ -604,7 +604,7 @@ const ItinerariesPage = () => {
                                         className={`day-tab ${selectedDay === i ? 'day-tab--active' : ''}`}
                                         onClick={() => setSelectedDay(i)}
                                     >
-                                        <span className="day-tab__num">Ziua {i + 1}</span>
+                                        <span className="day-tab__num">Day {i + 1}</span>
                                         <span className="day-tab__date">{fmtDate(d.date)}</span>
                                         {d.stops.length > 0 && <span className="day-tab__badge">{d.stops.length}</span>}
                                     </button>
@@ -623,8 +623,8 @@ const ItinerariesPage = () => {
                                 {days[selectedDay]?.stops.length === 0 ? (
                                     <div className="itin-empty-day">
                                         <span>🗺</span>
-                                        <p>Nicio oprire pentru aceasta zi.</p>
-                                        <p className="itin-empty-hint">Apasa butonul de jos pentru a adauga.</p>
+                                        <p>No stops for this day.</p>
+                                        <p className="itin-empty-hint">Use the button below to add one.</p>
                                     </div>
                                 ) : (
                                     days[selectedDay].stops.map((stop, idx) => {
@@ -636,7 +636,7 @@ const ItinerariesPage = () => {
                                                         className="stop-dot"
                                                         style={{ background: meta.color }}
                                                         onClick={() => handleToggleDone(stop.id)}
-                                                        title="Marcheaza ca vizitat"
+                                                        title="Mark as visited"
                                                     >
                                                         {stop.done ? '✓' : idx + 1}
                                                     </div>
@@ -660,7 +660,7 @@ const ItinerariesPage = () => {
                             </div>
 
                             <button className="itin-add-stop-btn" onClick={() => setShowAddStop(true)}>
-                                + Adauga o oprire
+                                + Add a stop
                             </button>
                         </div>
 
@@ -698,8 +698,8 @@ const ItinerariesPage = () => {
                                     })}
                             </MapContainer>
                             <div className="map-overlay-badge">
-                                <span className="mob-day">Ziua {selectedDay + 1}</span>
-                                <span>{days[selectedDay]?.stops.length || 0} opriri</span>
+                                <span className="mob-day">Day {selectedDay + 1}</span>
+                                <span>{days[selectedDay]?.stops.length || 0} stops</span>
                             </div>
                         </div>
                     </div>

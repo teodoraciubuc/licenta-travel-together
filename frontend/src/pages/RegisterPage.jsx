@@ -101,11 +101,11 @@ export default function RegisterPage() {
         setErr("");
 
         if (!agree) {
-            setErr("Trebuie sa accepti termenii si politica de confidentialitate.");
+            setErr("You must accept the Terms and Privacy Policy.");
             return;
         }
         if (password.length < 8) {
-            setErr("Parola trebuie sa aiba minim 8 caractere.");
+            setErr("Password must be at least 8 characters long.");
             return;
         }
 
@@ -116,9 +116,8 @@ export default function RegisterPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username: fullName, email, password }),
             });
-            const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-                setErr(data?.message || "Inregistrare esuata.");
+                setErr("Registration failed.");
                 return;
             }
 
@@ -129,14 +128,14 @@ export default function RegisterPage() {
             });
             const loginData = await loginRes.json();
             if (!loginRes.ok) {
-                setErr("Autentificare automata esuata.");
+                setErr("Automatic login failed.");
                 return;
             }
             localStorage.setItem("token", loginData.token);
-            localStorage.setItem("user_name", loginData.username || fullName || "Calatorule");
+            localStorage.setItem("user_name", loginData.username || fullName || "Traveler");
             navigate("/questionnaire");
         } catch {
-            setErr("Eroare backend.");
+            setErr("Backend error.");
         } finally {
             setLoading(false);
         }

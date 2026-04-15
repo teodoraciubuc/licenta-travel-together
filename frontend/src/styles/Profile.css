@@ -1,7 +1,7 @@
 /* ── Profile Page ─────────────────────────────────────────── */
 .prof-page {
     min-height: 100vh;
-    background: #0f172a;
+    background: var(--app-ambient-bg);
     color: #e2e8f0;
     font-family: 'Segoe UI', system-ui, sans-serif;
 }
@@ -17,14 +17,15 @@
 
 /* ── HERO ──────────────────────────────────────────────────── */
 .prof-hero {
-    background: linear-gradient(135deg, #1e293b 0%, #1a2540 100%);
-    border: 1px solid #2d3a50;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.94) 0%, rgba(23, 37, 68, 0.88) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.16);
     border-radius: 16px;
     padding: 2rem 2.5rem;
     display: flex;
     align-items: center;
     gap: 2rem;
     flex-wrap: wrap;
+    box-shadow: var(--app-panel-shadow);
 }
 
 .prof-avatar {
@@ -118,8 +119,8 @@
 }
 
 .prof-stat-card {
-    background: #1e293b;
-    border: 1px solid #2d3a50;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.14);
     border-radius: 14px;
     padding: 1.5rem;
     text-align: center;
@@ -176,10 +177,11 @@
 
 /* ── CARDS ─────────────────────────────────────────────────── */
 .prof-card {
-    background: #1e293b;
-    border: 1px solid #2d3a50;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.14);
     border-radius: 14px;
     padding: 1.5rem;
+    box-shadow: var(--app-panel-shadow);
 }
 
 .prof-card--wide {

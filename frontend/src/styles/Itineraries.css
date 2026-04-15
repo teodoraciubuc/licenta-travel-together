@@ -9,8 +9,8 @@
 /* ── Variables ─────────────────────────────────────────────── */
 :root {
     --itin-bg: #080c14;
-    --itin-panel: #0d1525;
-    --itin-card: #111827;
+    --itin-panel: rgba(13, 21, 37, 0.94);
+    --itin-card: rgba(17, 24, 39, 0.92);
     --itin-hover: #1a2540;
     --itin-border: #1e2d45;
     --itin-border-hi: #2e4068;
@@ -33,7 +33,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--itin-bg);
+    background: var(--app-ambient-bg);
     color: var(--itin-text-mid);
     gap: 16px;
     font-family: 'DM Sans', sans-serif;
@@ -356,7 +356,7 @@
 /* ── Page layout ────────────────────────────────────────────── */
 .itin-page {
     min-height: calc(100vh - 60px);
-    background: var(--itin-bg);
+    background: var(--app-ambient-bg);
     display: flex;
     flex-direction: column;
     font-family: 'DM Sans', sans-serif;

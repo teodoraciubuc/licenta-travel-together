@@ -3,6 +3,19 @@
   box-sizing: border-box;
 }
 
+:root {
+  --app-bg-base: #08111f;
+  --app-bg-surface: #0f172a;
+  --app-ambient-bg:
+    radial-gradient(circle at top left, rgba(22, 163, 74, 0.14), transparent 28%),
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.16), transparent 26%),
+    radial-gradient(circle at bottom center, rgba(14, 165, 233, 0.08), transparent 30%),
+    linear-gradient(180deg, #08111f 0%, #0f172a 100%);
+  --app-panel-bg: rgba(15, 23, 42, 0.88);
+  --app-panel-border: rgba(148, 163, 184, 0.16);
+  --app-panel-shadow: 0 22px 50px rgba(0, 0, 0, 0.24);
+}
+
 html,
 body,
 #root {
@@ -13,6 +26,7 @@ body,
 }
 
 body {
-  font-family: Arial, sans-serif;
-  background: #0b1020;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--app-ambient-bg);
+  color: #e5eef9;
 }

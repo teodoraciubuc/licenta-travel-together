@@ -20,19 +20,19 @@ const DashboardPage = () => {
     const [visitedCountries, setVisitedCountries] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
     const [offset, setOffset] = React.useState(0);
-    const userName = localStorage.getItem('user_name') || 'Călătorule';
+    const userName = localStorage.getItem('user_name') || 'Traveler';
 
     const fetchDashboardData = async (currentOffset) => {
         try {
             const response = await fetch(`${BASE}/api/dashboard?offset=${currentOffset}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
             });
-            if (!response.ok) throw new Error('Eroare la dashboard');
+            if (!response.ok) throw new Error('Dashboard error');
             const data = await response.json();
             const newRecs = data.recommendations || [];
 
             if (newRecs.length === 0 && currentOffset > 0) {
-                alert('Ai parcurs toate recomandările disponibile!');
+                alert('You have viewed all available recommendations!');
                 return false;
             }
             setRecommendations(newRecs);
@@ -129,7 +129,7 @@ const DashboardPage = () => {
 
             <main className="dashboard-main">
                 <section className="hero-section">
-                    <h1>Bună, {userName}!</h1>
+                    <h1>Hello, {userName}!</h1>
                     <p>Pick a spot. Let's fill the map together!!</p>
                 </section>
 
@@ -151,12 +151,12 @@ const DashboardPage = () => {
                         </MapContainer>
                     </div>
                     <div className="map-edit-bar">
-                        <button className="btn-edit-map" onClick={() => navigate('/map')}>✏️ Editează harta</button>
+                        <button className="btn-edit-map" onClick={() => navigate('/map')}>Edit map</button>
                     </div>
                 </section>
                 <section className="flights-entry">
                     <button onClick={() => navigate('/flights/explore')} className="btn-explore-entry">
-                        ✈️ Explorează zboruri ieftine
+                        Explore flights and prices on the map
                     </button>
                 </section>
                 <section className="offers-section">
@@ -185,7 +185,7 @@ const DashboardPage = () => {
                                             className="btn-primary"
                                             onClick={() => navigate('/itineraries/new', { state: { city: dest.name, country: dest.country_en } })}
                                         >
-                                            Planifică o excursie acum!
+                                            Plan a trip now!
                                         </button>
                                     </div>
                                 </div>

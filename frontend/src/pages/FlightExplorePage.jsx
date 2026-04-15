@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, Marker, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../styles/FlightExplore.css';
@@ -9,21 +9,45 @@ import TopNav from '../components/TopNav';
 const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001';
 
 const ORIGINS = [
-    { code: 'OTP', label: 'Bucuresti (OTP)' },
+    { code: 'OTP', label: 'Bucharest (OTP)' },
     { code: 'CLJ', label: 'Cluj (CLJ)' },
     { code: 'TSR', label: 'Timisoara (TSR)' },
     { code: 'IAS', label: 'Iasi (IAS)' },
 ];
 
-const MONTH_OPTIONS = [
-    { value: '', label: 'Oricand' },
-    { value: '2026-03', label: 'Martie 2026' },
-    { value: '2026-04', label: 'Aprilie 2026' },
-    { value: '2026-05', label: 'Mai 2026' },
-    { value: '2026-06', label: 'Iunie 2026' },
-    { value: '2026-07', label: 'Iulie 2026' },
-    { value: '2026-08', label: 'August 2026' },
-];
+const EXCLUDED_DESTINATION_CODES = new Set(['DXB', 'HRG', 'SSH', 'RAK', 'TUN']);
+
+const VOLA_ORIGINS = {
+    OTP: { city: 'Bucuresti', code: 'BUH' },
+    CLJ: { city: 'Cluj Napoca', code: 'CLJ' },
+    TSR: { city: 'Timisoara', code: 'TSR' },
+    IAS: { city: 'Iasi', code: 'IAS' },
+};
+
+function formatDateInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function getTodayDate() {
+    return formatDateInput(new Date());
+}
+
+function parseLocalDate(value) {
+    return new Date(`${value}T00:00:00`);
+}
+
+function addDays(value, days) {
+    const date = parseLocalDate(value);
+    date.setDate(date.getDate() + days);
+    return formatDateInput(date);
+}
+
+function normalizeCityForPath(value) {
+    return String(value ?? '').trim().replace(/\s+/g, '-');
+}
 
 function makePriceIcon(price, currency, isSelected, isCheap) {
     const bg = isSelected ? '#6366f1' : isCheap ? '#16a34a' : '#1e293b';
@@ -74,11 +98,13 @@ function MapController({ selected, destinations }) {
     return null;
 }
 
-const FlightExplorePage = () => {
+export default function FlightExplorePage() {
     const navigate = useNavigate();
+    const today = getTodayDate();
 
     const [origin, setOrigin] = useState('OTP');
-    const [month, setMonth] = useState('');
+    const [departureDate, setDepartureDate] = useState(today);
+    const [returnDate, setReturnDate] = useState(() => addDays(today, 3));
     const [oneWay, setOneWay] = useState(false);
     const [nonStop, setNonStop] = useState(false);
 
@@ -89,6 +115,19 @@ const FlightExplorePage = () => {
 
     const listRef = useRef(null);
 
+    const getTravelDates = useCallback(
+        (dest = {}) => {
+            const outbound = dest.departureDate || departureDate;
+            const inbound = oneWay ? null : dest.returnDate || returnDate;
+
+            return {
+                outbound,
+                inbound,
+            };
+        },
+        [departureDate, returnDate, oneWay]
+    );
+
     const fetchExplore = useCallback(async () => {
         setLoading(true);
         setError('');
@@ -98,12 +137,13 @@ const FlightExplorePage = () => {
         try {
             const params = new URLSearchParams({
                 origin,
+                departureDate,
                 oneWay: String(oneWay),
                 nonStop: String(nonStop),
             });
 
-            if (month) {
-                params.append('departureDate', month);
+            if (!oneWay && returnDate) {
+                params.append('returnDate', returnDate);
             }
 
             const res = await fetch(`${BASE}/api/dashboard/flight-explore?${params.toString()}`, {
@@ -113,7 +153,7 @@ const FlightExplorePage = () => {
             });
 
             if (!res.ok) {
-                throw new Error('Eroare server');
+                throw new Error('Server error');
             }
 
             const data = await res.json();
@@ -129,12 +169,14 @@ const FlightExplorePage = () => {
                 currency: d.currency ?? 'EUR',
                 departureDate: d.departureDate ?? null,
                 returnDate: d.returnDate ?? null,
+                country_name: d.country_name ?? d.country ?? '',
             }));
 
             const valid = normalized.filter(
                 (d) =>
                     d.city &&
                     d.destination &&
+                    !EXCLUDED_DESTINATION_CODES.has(d.destination) &&
                     Number.isFinite(d.lat) &&
                     Number.isFinite(d.lon) &&
                     Number.isFinite(d.price)
@@ -143,11 +185,11 @@ const FlightExplorePage = () => {
             setDestinations(valid);
         } catch (err) {
             console.error('flight-explore error:', err);
-            setError('Nu am putut incarca destinatiile.');
+            setError("We couldn't load destinations.");
         } finally {
             setLoading(false);
         }
-    }, [origin, month, oneWay, nonStop]);
+    }, [origin, departureDate, returnDate, oneWay, nonStop]);
 
     useEffect(() => {
         fetchExplore();
@@ -167,31 +209,47 @@ const FlightExplorePage = () => {
         }
     };
 
+    const handleDepartureDateChange = (event) => {
+        const nextDepartureDate = event.target.value || today;
+        const safeDepartureDate = nextDepartureDate < today ? today : nextDepartureDate;
+
+        setDepartureDate(safeDepartureDate);
+
+        if (returnDate < safeDepartureDate) {
+            setReturnDate(addDays(safeDepartureDate, 3));
+        }
+    };
+
+    const handleReturnDateChange = (event) => {
+        const nextReturnDate = event.target.value;
+        if (!nextReturnDate) {
+            setReturnDate(addDays(departureDate, 3));
+            return;
+        }
+
+        setReturnDate(nextReturnDate < departureDate ? departureDate : nextReturnDate);
+    };
+
     const fmtDate = (iso) => {
         if (!iso) return '';
-        return new Date(iso).toLocaleDateString('ro-RO', {
+
+        return parseLocalDate(iso).toLocaleDateString('en-GB', {
             day: 'numeric',
             month: 'short',
         });
     };
 
     const getAccomDates = (dest) => {
-        const checkin =
-            dest.departureDate ||
-            new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
-
-        const checkout =
-            dest.returnDate ||
-            new Date(new Date(checkin).getTime() + 3 * 86400000)
-                .toISOString()
-                .split('T')[0];
-
-        return { checkin, checkout };
+        const { outbound, inbound } = getTravelDates(dest);
+        return {
+            checkin: outbound,
+            checkout: inbound || addDays(outbound, 3),
+        };
     };
 
     const getBookingUrl = (dest) => {
         const { checkin, checkout } = getAccomDates(dest);
-        return `https://www.booking.com/search.html?ss=${encodeURIComponent(dest.city)}&checkin=${checkin}&checkout=${checkout}&lang=ro`;
+        return `https://www.booking.com/search.html?ss=${encodeURIComponent(dest.city)}&checkin=${checkin}&checkout=${checkout}&lang=en`;
     };
 
     const getAirbnbUrl = (dest) => {
@@ -200,8 +258,62 @@ const FlightExplorePage = () => {
     };
 
     const getMomondoUrl = (dest) => {
-        const departure = dest.departureDate || new Date().toISOString().split('T')[0];
-        return `https://www.momondo.ro/flight-search/${dest.origin}-${dest.destination}/${departure}/1`;
+        const { outbound, inbound } = getTravelDates(dest);
+        const searchPath = inbound
+            ? `${dest.origin}-${dest.destination}/${outbound}/${inbound}/1adults`
+            : `${dest.origin}-${dest.destination}/${outbound}/1adults`;
+        return `https://www.momondo.ro/flight-search/${searchPath}?sort=bestflight_a`;
+    };
+
+    const getVolaUrl = (dest) => {
+        const { outbound, inbound } = getTravelDates(dest);
+        const originInfo = VOLA_ORIGINS[dest.origin] ?? {
+            city: dest.origin,
+            code: dest.origin,
+        };
+        const baseUrl =
+            `https://www.vola.ro/bilete-avion/din-${normalizeCityForPath(originInfo.city)}-${originInfo.code}` +
+            `/catre-${normalizeCityForPath(dest.city)}-${dest.destination}/`;
+        const params = new URLSearchParams({
+            departureDate: outbound,
+            adults: '1',
+            flightType: inbound ? 'roundTrip' : 'oneWay',
+        });
+
+        if (inbound) {
+            params.set('returnDate', inbound);
+        }
+
+        return `${baseUrl}?${params.toString()}`;
+    };
+
+    const getWizzUrl = (dest) => {
+        const { outbound, inbound } = getTravelDates(dest);
+        const inboundSegment = inbound || 'null';
+        return `https://www.wizzair.com/en-gb/booking/select-flight/${dest.origin}/${dest.destination}/${outbound}/${inboundSegment}/1/0/0/null`;
+    };
+
+    const getRyanairUrl = (dest) => {
+        const { outbound, inbound } = getTravelDates(dest);
+        const params = new URLSearchParams({
+            adults: '1',
+            teens: '0',
+            children: '0',
+            infants: '0',
+            dateOut: outbound,
+            originIata: dest.origin,
+            destinationIata: dest.destination,
+            isConnectedFlight: 'false',
+            discount: '0',
+            promoCode: '',
+            isReturn: inbound ? 'true' : 'false',
+        });
+
+        if (inbound) {
+            params.set('dateIn', inbound);
+        }
+
+        return `https://www.ryanair.com/gb/en/trip/flights/select?${params.toString()}`;
     };
 
     return (
@@ -211,13 +323,14 @@ const FlightExplorePage = () => {
             <div className="explore-body">
                 <aside className="explore-sidebar">
                     <div className="explore-search-box">
-                        <h2 className="explore-title">✈️ Exploreaza zboruri</h2>
+                        <h2 className="explore-title">Explore flights</h2>
                         <p className="explore-sub">
-                            Preturi orientative · pentru oferte exacte cauta pe Momondo
+                            Map prices are estimates. The selected date range is forwarded to
+                            Momondo, Vola, Wizz Air and Ryanair.
                         </p>
 
                         <div className="explore-field">
-                            <label>De la</label>
+                            <label>From</label>
                             <select value={origin} onChange={(e) => setOrigin(e.target.value)}>
                                 {ORIGINS.map((o) => (
                                     <option key={o.code} value={o.code}>
@@ -228,14 +341,24 @@ const FlightExplorePage = () => {
                         </div>
 
                         <div className="explore-field">
-                            <label>Cand</label>
-                            <select value={month} onChange={(e) => setMonth(e.target.value)}>
-                                {MONTH_OPTIONS.map((o) => (
-                                    <option key={o.value} value={o.value}>
-                                        {o.label}
-                                    </option>
-                                ))}
-                            </select>
+                            <label>Departure date</label>
+                            <input
+                                type="date"
+                                value={departureDate}
+                                min={today}
+                                onChange={handleDepartureDateChange}
+                            />
+                        </div>
+
+                        <div className="explore-field">
+                            <label>Return date</label>
+                            <input
+                                type="date"
+                                value={returnDate}
+                                min={departureDate}
+                                onChange={handleReturnDateChange}
+                                disabled={oneWay}
+                            />
                         </div>
 
                         <div className="explore-toggles">
@@ -245,7 +368,7 @@ const FlightExplorePage = () => {
                                     checked={nonStop}
                                     onChange={(e) => setNonStop(e.target.checked)}
                                 />
-                                <span>Doar direct</span>
+                                <span>Non-stop only</span>
                             </label>
 
                             <label className="toggle-chip">
@@ -254,21 +377,17 @@ const FlightExplorePage = () => {
                                     checked={oneWay}
                                     onChange={(e) => setOneWay(e.target.checked)}
                                 />
-                                <span>Dus simplu</span>
+                                <span>One way</span>
                             </label>
                         </div>
 
-                        <button
-                            className="btn-explore-search"
-                            onClick={fetchExplore}
-                            disabled={loading}
-                        >
+                        <button className="btn-explore-search" onClick={fetchExplore} disabled={loading}>
                             {loading ? (
                                 <>
-                                    <span className="btn-spinner" /> Cauta...
+                                    <span className="btn-spinner" /> Searching...
                                 </>
                             ) : (
-                                '🔍 Cauta destinatii'
+                                'Search destinations'
                             )}
                         </button>
                     </div>
@@ -290,8 +409,8 @@ const FlightExplorePage = () => {
 
                         {!loading && destinations.length === 0 && !error && (
                             <div className="explore-empty">
-                                <span>🗺️</span>
-                                <p>Apasa "Cauta destinatii" pentru a vedea preturile pe harta.</p>
+                                <span>Price map</span>
+                                <p>Click "Search destinations" to view prices on the map.</p>
                             </div>
                         )}
 
@@ -299,6 +418,7 @@ const FlightExplorePage = () => {
                             destinations.map((dest, i) => {
                                 const isCheap = cheapThreshold > 0 ? dest.price <= cheapThreshold : false;
                                 const isSelected = selected?.id === dest.id;
+                                const { outbound, inbound } = getTravelDates(dest);
 
                                 return (
                                     <div
@@ -315,21 +435,21 @@ const FlightExplorePage = () => {
                                                 <div className="dest-city">{dest.city}</div>
                                                 <div className="dest-code">{dest.destination}</div>
 
-                                                {dest.departureDate && (
+                                                {outbound && (
                                                     <div className="dest-dates">
-                                                        {fmtDate(dest.departureDate)}
-                                                        {dest.returnDate && ` → ${fmtDate(dest.returnDate)}`}
-                                                        {dest.returnDate ? ' · Dus-intors' : ' · Dus'}
+                                                        {fmtDate(outbound)}
+                                                        {inbound && ` -> ${fmtDate(inbound)}`}
+                                                        {inbound ? ' - Round trip' : ' - One way'}
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
 
                                         <div className="dest-card-right">
-                                            {isCheap && <div className="cheap-badge">🔥 Ieftin</div>}
+                                            {isCheap && <div className="cheap-badge">Best deal</div>}
 
                                             <div className="dest-price">
-                                                de la {Math.round(dest.price)}{' '}
+                                                from {Math.round(dest.price)}{' '}
                                                 <span className="dest-currency">{dest.currency}</span>
                                             </div>
 
@@ -340,7 +460,7 @@ const FlightExplorePage = () => {
                                                 className="btn-book-small"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
-                                                Rezerva →
+                                                Book {'->'}
                                             </a>
                                         </div>
                                     </div>
@@ -382,31 +502,33 @@ const FlightExplorePage = () => {
                     {selected && (
                         <div className="explore-popup">
                             <button className="popup-close" onClick={() => setSelected(null)}>
-                                ✕
+                                X
                             </button>
 
                             <div className="popup-city">{selected.city}</div>
                             <div className="popup-code">
-                                {selected.origin} → {selected.destination}
+                                {selected.origin} {'->'} {selected.destination}
                             </div>
 
-                            {selected.departureDate && (
+                            {getTravelDates(selected).outbound && (
                                 <div className="popup-dates">
-                                    📅 {fmtDate(selected.departureDate)}
-                                    {selected.returnDate && ` – ${fmtDate(selected.returnDate)}`}
+                                    {fmtDate(getTravelDates(selected).outbound)}
+                                    {getTravelDates(selected).inbound &&
+                                        ` - ${fmtDate(getTravelDates(selected).inbound)}`}
                                 </div>
                             )}
 
                             <div className="popup-price">
-                                de la {Math.round(selected.price)} <span>{selected.currency}</span>
+                                from {Math.round(selected.price)} <span>{selected.currency}</span>
                             </div>
 
                             <p className="popup-hint">
-                                Preturi orientative · pentru oferte exacte cauta pe Momondo
+                                The map price is indicative, but the links below open with the date range
+                                selected in the filters.
                             </p>
 
-                            <div className="popup-section-label">✈️ Zboruri</div>
-                            <div className="popup-actions">
+                            <div className="popup-section-label">Flights</div>
+                            <div className="popup-actions popup-actions--flights">
                                 <a
                                     href={getMomondoUrl(selected)}
                                     target="_blank"
@@ -415,10 +537,37 @@ const FlightExplorePage = () => {
                                 >
                                     Momondo
                                 </a>
+
+                                <a
+                                    href={getVolaUrl(selected)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-popup-book btn-vola"
+                                >
+                                    Vola
+                                </a>
+
+                                <a
+                                    href={getWizzUrl(selected)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-popup-book btn-wizz"
+                                >
+                                    Wizz Air
+                                </a>
+
+                                <a
+                                    href={getRyanairUrl(selected)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-popup-book btn-ryanair"
+                                >
+                                    Ryanair
+                                </a>
                             </div>
 
                             <div className="popup-section-label" style={{ marginTop: '14px' }}>
-                                🏨 Cazare in {selected.city}
+                                Accommodation in {selected.city}
                             </div>
 
                             <div className="popup-actions">
@@ -450,7 +599,7 @@ const FlightExplorePage = () => {
                                     })
                                 }
                             >
-                                📋 Creeaza itinerariu pentru {selected.city}
+                                Create itinerary for {selected.city}
                             </button>
                         </div>
                     )}
@@ -458,13 +607,13 @@ const FlightExplorePage = () => {
                     {destinations.length > 0 && (
                         <div className="explore-legend">
                             <div className="legend-item">
-                                <span className="legend-dot green" /> Cel mai ieftin
+                                <span className="legend-dot green" /> Cheapest
                             </div>
                             <div className="legend-item">
-                                <span className="legend-dot dark" /> Alte destinatii
+                                <span className="legend-dot dark" /> Other destinations
                             </div>
                             <div className="legend-item">
-                                <span className="legend-dot purple" /> Selectat
+                                <span className="legend-dot purple" /> Selected
                             </div>
                         </div>
                     )}
@@ -472,6 +621,4 @@ const FlightExplorePage = () => {
             </div>
         </div>
     );
-};
-
-export default FlightExplorePage;
+}

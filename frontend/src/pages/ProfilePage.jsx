@@ -32,7 +32,7 @@ export default function ProfilePage() {
     const [pwMsg, setPwMsg] = useState('');
     const [savingPw, setSavingPw] = useState(false);
 
-    const storedName = localStorage.getItem('user_name') || 'Călătorule';
+    const storedName = localStorage.getItem('user_name') || 'Traveler';
 
     const [mapData, setMapData] = useState(null);
 
@@ -88,10 +88,10 @@ export default function ProfilePage() {
             if (!res.ok) throw new Error();
             localStorage.setItem('user_name', tmpName.trim());
             setEditingName(false);
-            setNameMsg('Numele a fost actualizat.');
+            setNameMsg('Your name was updated.');
             setTimeout(() => setNameMsg(''), 3000);
         } catch {
-            setNameMsg('Eroare la salvare.');
+            setNameMsg('Could not save your changes.');
         } finally {
             setSavingName(false);
         }
@@ -100,11 +100,11 @@ export default function ProfilePage() {
     /* ── change password stub ── */
     const handleChangePw = async () => {
         if (pwForm.next !== pwForm.confirm) {
-            setPwMsg('Parolele nu se potrivesc.');
+            setPwMsg('Passwords do not match.');
             return;
         }
         if (pwForm.next.length < 8) {
-            setPwMsg('Parola trebuie să aibă minim 8 caractere.');
+            setPwMsg('Password must be at least 8 characters long.');
             return;
         }
         setSavingPw(true);
@@ -123,14 +123,14 @@ export default function ProfilePage() {
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                setPwMsg(err.message || 'Eroare la schimbarea parolei.');
+                setPwMsg('Could not change the password.');
             } else {
-                setPwMsg('✓ Parola a fost schimbată cu succes!');
+                setPwMsg('Password changed successfully!');
                 setPwForm({ current: '', next: '', confirm: '' });
                 setTimeout(() => { setShowPwForm(false); setPwMsg(''); }, 2500);
             }
         } catch {
-            setPwMsg('Eroare de rețea.');
+            setPwMsg('Network error.');
         } finally {
             setSavingPw(false);
         }
@@ -138,7 +138,7 @@ export default function ProfilePage() {
 
     const fmtDate = (iso) =>
         iso
-            ? new Date(iso).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short', year: 'numeric' })
+            ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
             : '—';
 
     return (
@@ -161,12 +161,12 @@ export default function ProfilePage() {
                                     autoFocus
                                     onChange={(e) => setTmpName(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
-                                    placeholder="Numele tău"
+                                    placeholder="Your name"
                                 />
                                 <button className="prof-btn-sm" onClick={handleSaveName} disabled={savingName}>
-                                    {savingName ? '...' : 'Salvează'}
+                                    {savingName ? '...' : 'Save'}
                                 </button>
-                                <button className="prof-btn-ghost-sm" onClick={() => setEditingName(false)}>Anulează</button>
+                                <button className="prof-btn-ghost-sm" onClick={() => setEditingName(false)}>Cancel</button>
                             </div>
                         ) : (
                             <h1 className="prof-username">
@@ -174,20 +174,20 @@ export default function ProfilePage() {
                                 <button
                                     className="prof-edit-icon"
                                     onClick={() => { setTmpName(storedName); setEditingName(true); }}
-                                    title="Editează numele"
+                                    title="Edit name"
                                 >✏️</button>
                             </h1>
                         )}
                         {nameMsg && <p className="prof-success-msg">{nameMsg}</p>}
-                        <p className="prof-joined">Membru Travel Together</p>
+                        <p className="prof-joined">Travel Together member</p>
                     </div>
 
                     <div className="prof-hero-actions">
                         <button className="prof-btn-outline" onClick={() => navigate('/questionnaire')}>
-                            🎯 Actualizează preferințele
+                            🎯 Update preferences
                         </button>
                         <button className="prof-btn-outline" onClick={() => navigate('/itineraries/new')}>
-                            ✈️ Planifică o vacanță
+                            ✈️ Plan a trip
                         </button>
                     </div>
                 </section>
@@ -197,25 +197,25 @@ export default function ProfilePage() {
                     <StatCard
                         icon="🌍"
                         value={loading ? '—' : countryCounts.visited}
-                        label="Țări vizitate"
+                        label="Visited countries"
                         color="#9ba59f"
                     />
                     <StatCard
                         icon="📋"
                         value={loading ? '—' : countryCounts.planned}
-                        label="Țări planificate"
+                        label="Planned countries"
                         color="#766fb5"
                     />
                     <StatCard
                         icon="💛"
                         value={loading ? '—' : countryCounts.wishlist}
-                        label="Țări pe wishlist"
+                        label="Wishlist countries"
                         color="#986666"
                     />
                     <StatCard
                         icon="🗺️"
                         value={loading ? '—' : (data?.itinerariesCount ?? 0)}
-                        label="Itinerarii create"
+                        label="Created itineraries"
                         color="#6366f1"
                     />
                 </section>
@@ -225,20 +225,20 @@ export default function ProfilePage() {
                     {/* ══ RECENT ITINERARIES ══ */}
                     <section className="prof-card">
                         <div className="prof-card-header">
-                            <h3>Itinerarii recente</h3>
+                            <h3>Recent itineraries</h3>
                             <button className="prof-card-link" onClick={() => navigate('/itineraries/new')}>
-                                + Nou
+                                + New
                             </button>
                         </div>
 
                         {loading ? (
-                            <p className="prof-muted">Se încarcă...</p>
+                            <p className="prof-muted">Loading...</p>
                         ) : !data?.recentItineraries?.length ? (
                             <div className="prof-empty">
                                 <span>🗺️</span>
-                                <p>Niciun itinerariu creat încă.</p>
+                                <p>No itineraries created yet.</p>
                                 <button className="prof-btn-sm" onClick={() => navigate('/itineraries/new')}>
-                                    Creează primul itinerariu
+                                    Create your first itinerary
                                 </button>
                             </div>
                         ) : (
@@ -266,19 +266,19 @@ export default function ProfilePage() {
                     {/* ══ TRAVEL PREFERENCES ══ */}
                     <section className="prof-card">
                         <div className="prof-card-header">
-                            <h3>Preferințe de călătorie</h3>
+                            <h3>Travel preferences</h3>
                         </div>
 
                         {loading ? (
-                            <p className="prof-muted">Se încarcă...</p>
+                            <p className="prof-muted">Loading...</p>
                         ) : data?.profile?.hasPreferences ? (
                             <div className="prof-pref-block">
                                 <div className="prof-pref-badge">
                                     <span>✅</span>
                                     <div>
-                                        <p className="prof-pref-title">Profilul tău e configurat</p>
+                                        <p className="prof-pref-title">Your profile is set up</p>
                                         <p className="prof-muted">
-                                            {data.profile.preferencesCount} preferințe salvate — recomandările sunt personalizate pentru tine.
+                                            {data.profile.preferencesCount} saved preferences. Your recommendations are personalized for you.
                                         </p>
                                     </div>
                                 </div>
@@ -286,15 +286,15 @@ export default function ProfilePage() {
                                     className="prof-btn-outline prof-btn-full"
                                     onClick={() => navigate('/questionnaire')}
                                 >
-                                    🎯 Actualizează preferințele
+                                    Update preferences
                                 </button>
                             </div>
                         ) : (
                             <div className="prof-empty">
                                 <span>🎯</span>
-                                <p>Completează chestionarul pentru recomandări personalizate.</p>
+                                <p>Complete the questionnaire for personalized recommendations.</p>
                                 <button className="prof-btn-sm" onClick={() => navigate('/questionnaire')}>
-                                    Completează acum
+                                    Complete it now
                                 </button>
                             </div>
                         )}
@@ -303,22 +303,22 @@ export default function ProfilePage() {
                     {/* ══ ACCOUNT SETTINGS ══ */}
                     <section className="prof-card prof-card--wide">
                         <div className="prof-card-header">
-                            <h3>Setări cont</h3>
+                            <h3>Account settings</h3>
                         </div>
 
                         <div className="prof-settings-row">
                             <div className="prof-settings-label">
                                 <span className="prof-settings-icon">🔒</span>
                                 <div>
-                                    <p className="prof-settings-title">Schimbă parola</p>
-                                    <p className="prof-muted">Actualizează parola contului tău.</p>
+                                    <p className="prof-settings-title">Change password</p>
+                                    <p className="prof-muted">Update your account password.</p>
                                 </div>
                             </div>
                             <button
                                 className="prof-btn-outline"
                                 onClick={() => { setShowPwForm((v) => !v); setPwMsg(''); }}
                             >
-                                {showPwForm ? 'Anulează' : 'Schimbă'}
+                                {showPwForm ? 'Cancel' : 'Change'}
                             </button>
                         </div>
 
@@ -326,29 +326,29 @@ export default function ProfilePage() {
                             <div className="prof-pw-form">
                                 <input
                                     type="password"
-                                    placeholder="Parola curentă"
+                                    placeholder="Current password"
                                     value={pwForm.current}
                                     onChange={(e) => setPwForm((p) => ({ ...p, current: e.target.value }))}
                                 />
                                 <input
                                     type="password"
-                                    placeholder="Parola nouă (min. 8 caractere)"
+                                    placeholder="New password (min. 8 characters)"
                                     value={pwForm.next}
                                     onChange={(e) => setPwForm((p) => ({ ...p, next: e.target.value }))}
                                 />
                                 <input
                                     type="password"
-                                    placeholder="Confirmă parola nouă"
+                                    placeholder="Confirm new password"
                                     value={pwForm.confirm}
                                     onChange={(e) => setPwForm((p) => ({ ...p, confirm: e.target.value }))}
                                 />
                                 {pwMsg && (
-                                    <p className={pwMsg.startsWith('✓') ? 'prof-success-msg' : 'prof-error-msg'}>
+                                    <p className={pwMsg === 'Password changed successfully!' ? 'prof-success-msg' : 'prof-error-msg'}>
                                         {pwMsg}
                                     </p>
                                 )}
                                 <button className="prof-btn-sm" onClick={handleChangePw} disabled={savingPw}>
-                                    {savingPw ? 'Se salvează...' : 'Salvează parola'}
+                                    {savingPw ? 'Saving...' : 'Save password'}
                                 </button>
                             </div>
                         )}
@@ -359,8 +359,8 @@ export default function ProfilePage() {
                             <div className="prof-settings-label">
                                 <span className="prof-settings-icon">🚪</span>
                                 <div>
-                                    <p className="prof-settings-title">Deconectare</p>
-                                    <p className="prof-muted">Ieși din contul tău pe acest dispozitiv.</p>
+                                    <p className="prof-settings-title">Log out</p>
+                                    <p className="prof-muted">Sign out of your account on this device.</p>
                                 </div>
                             </div>
                             <button className="prof-btn-danger" onClick={() => { localStorage.clear(); navigate('/login'); }}>Logout</button>

@@ -1,6 +1,6 @@
 .map-page-container {
     min-height: 100vh;
-    background-color: #0b1020;
+    background: var(--app-ambient-bg);
     color: #f8fafc;
     display: flex;
     flex-direction: column;
@@ -25,7 +25,8 @@
     flex: 1;
     border-radius: 12px;
     overflow: hidden;
-    border: 1px solid #334155;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    box-shadow: var(--app-panel-shadow);
 }
 
 .map-legend {
@@ -219,8 +220,8 @@
 
 /* ── Country card ── */
 .country-card {
-    background: #131e2e;
-    border: 1px solid #1e2d42;
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(148, 163, 184, 0.12);
     border-radius: 10px;
     overflow: hidden;
     transition: border-color 0.15s;
@@ -643,8 +644,8 @@
 
 /* Manual add form */
 .manual-form {
-    background: #0f1929;
-    border: 1px solid #1e3a5f;
+    background: rgba(15, 25, 41, 0.94);
+    border: 1px solid rgba(59, 130, 246, 0.2);
     border-radius: 10px;
     padding: 16px;
     display: flex;

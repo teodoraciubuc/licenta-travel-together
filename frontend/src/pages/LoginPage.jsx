@@ -106,14 +106,14 @@ export default function LoginPage() {
             });
             const data = await r.json().catch(() => ({}));
             if (!r.ok) {
-                setErr(data?.message || "Login esuat. Verifica email/parola.");
+                setErr("Login failed. Check your email and password.");
                 return;
             }
             localStorage.setItem("token", data.token);
-            localStorage.setItem("user_name", data.username || "Calatorule");
+            localStorage.setItem("user_name", data.username || "Traveler");
             navigate("/dashboard");
         } catch {
-            setErr("Eroare la backend.");
+            setErr("Backend error.");
         } finally {
             setLoading(false);
         }
