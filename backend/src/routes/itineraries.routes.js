@@ -4,7 +4,6 @@ const auth = require('../middleware/auth');
 const itinerariesController = require('../controllers/itineraries.controller');
 
 router.post('/', auth, itinerariesController.createTrip);
-router.get('/', auth, itinerariesController.getTrips);
 router.get('/:id', auth, itinerariesController.getTripById);
 router.get('/:id/recommendations', auth, itinerariesController.getRecommendations);
 router.post('/:id/items',  auth, itinerariesController.addItem);

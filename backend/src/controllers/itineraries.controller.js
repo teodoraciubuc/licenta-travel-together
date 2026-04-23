@@ -50,7 +50,7 @@ function normalizeItineraryCategory(category) {
 
 async function ensureDestinationPlannedForUser(userId, destinationId) {
   const existingResult = await pool.query(
-    `SELECT id, status FROM "User_Map_Status" WHERE user_id = $1 AND destination_id = $2`,
+    `SELECT status FROM "User_Map_Status" WHERE user_id = $1 AND destination_id = $2`,
     [userId, destinationId]
   );
 
@@ -67,8 +67,10 @@ async function ensureDestinationPlannedForUser(userId, destinationId) {
 
   if (MAP_STATUS_PRIORITY.planned > existingPriority) {
     await pool.query(
-      `UPDATE "User_Map_Status" SET status = $1 WHERE id = $2`,
-      ["planned", existingEntry.id]
+      `UPDATE "User_Map_Status"
+       SET status = $1
+       WHERE user_id = $2 AND destination_id = $3`,
+      ["planned", userId, destinationId]
     );
   }
 }
@@ -116,35 +118,7 @@ async function createTrip(req, res) {
     return res.status(500).json({ message: "Eroare interna server.", details: error.message });
   }
 }
-async function getTrips(req, res) {
-  try {
-    const userId = getUserId(req);
 
-    const result = await pool.query(
-      `
-      SELECT
-        id,
-        user_id,
-        title AS name,
-        destination,
-        start_date AS "startDate",
-        end_date AS "endDate",
-        created_at
-      FROM "Itineraries"
-      WHERE user_id = $1
-      ORDER BY created_at DESC, id DESC
-      `,
-      [userId]
-    );
-
-    return res.json(result.rows);
-  } catch (error) {
-    return res.status(500).json({
-      message: "Eroare interna server.",
-      details: error.message,
-    });
-  }
-}
 async function getTripById(req, res) {
   try {
     const userId = getUserId(req);
@@ -505,7 +479,6 @@ async function updateTrip(req, res) {
 }
 module.exports = {
   createTrip,
-  getTrips,
   getTripById,
   getRecommendations,
   addItem,
