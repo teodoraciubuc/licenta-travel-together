@@ -368,7 +368,7 @@ export default function FlightExplorePage() {
                                     checked={nonStop}
                                     onChange={(e) => setNonStop(e.target.checked)}
                                 />
-                                <span>Non-stop only</span>
+                                <span>Return</span>
                             </label>
 
                             <label className="toggle-chip">

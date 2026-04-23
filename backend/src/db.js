@@ -1,11 +1,7 @@
-import pg from "pg";
-import dotenv from "dotenv";
+const { Pool } = require("pg");
+require("dotenv").config();
 
-dotenv.config();
-
-const { Pool } = pg;
-
-export const pool = new Pool({
+const internalPool = new Pool({
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT || 5432),
   user: process.env.DB_USER,
@@ -13,7 +9,7 @@ export const pool = new Pool({
   database: process.env.DB_NAME,
 });
 
-export async function query(text, params) {
-  const res = await pool.query(text, params);
-  return res;
-}
+module.exports = {
+  pool: internalPool,
+  query: (text, params) => internalPool.query(text, params),
+};

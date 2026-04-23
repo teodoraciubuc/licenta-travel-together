@@ -116,7 +116,35 @@ async function createTrip(req, res) {
     return res.status(500).json({ message: "Eroare interna server.", details: error.message });
   }
 }
+async function getTrips(req, res) {
+  try {
+    const userId = getUserId(req);
 
+    const result = await pool.query(
+      `
+      SELECT
+        id,
+        user_id,
+        title AS name,
+        destination,
+        start_date AS "startDate",
+        end_date AS "endDate",
+        created_at
+      FROM "Itineraries"
+      WHERE user_id = $1
+      ORDER BY created_at DESC, id DESC
+      `,
+      [userId]
+    );
+
+    return res.json(result.rows);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Eroare interna server.",
+      details: error.message,
+    });
+  }
+}
 async function getTripById(req, res) {
   try {
     const userId = getUserId(req);
@@ -477,6 +505,7 @@ async function updateTrip(req, res) {
 }
 module.exports = {
   createTrip,
+  getTrips,
   getTripById,
   getRecommendations,
   addItem,

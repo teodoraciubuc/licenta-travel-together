@@ -52,7 +52,7 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState("");
 
-    /* ── Slideshow ── */
+    // Slideshow
     useEffect(() => {
         const t = setInterval(() => {
             setSlideIndex((i) => (i + 1) % images.length);
@@ -60,7 +60,7 @@ export default function LoginPage() {
         return () => clearInterval(t);
     }, [images.length]);
 
-    /* ── Load Google GSI script ── */
+    //Load Google GSI script
     useEffect(() => {
         if (!GOOGLE_CLIENT_ID) return;
         if (document.getElementById("google-gsi-script")) return;
@@ -72,28 +72,8 @@ export default function LoginPage() {
         document.head.appendChild(script);
     }, []);
 
-    /* ── Load Facebook SDK ── */
-    useEffect(() => {
-        if (!FACEBOOK_APP_ID) return;
-        if (document.getElementById("facebook-sdk")) return;
-        window.fbAsyncInit = function () {
-            window.FB.init({
-                appId: FACEBOOK_APP_ID,
-                cookie: true,
-                xfbml: true,
-                version: "v19.0",
-            });
-        };
-        const script = document.createElement("script");
-        script.id = "facebook-sdk";
-        script.src = "https://connect.facebook.net/en_US/sdk.js";
-        script.async = true;
-        script.defer = true;
-        document.head.appendChild(script);
-    }, []);
 
-
-    /* ── Email / Password Login ── */
+    // Email / Password Login
     async function handleLogin(e) {
         e.preventDefault();
         setErr("");
@@ -145,7 +125,6 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            {/* RIGHT */}
             <div className="auth-right">
                 <div className="card">
                     <h1 className="title">Welcome back</h1>
