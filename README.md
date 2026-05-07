@@ -39,7 +39,6 @@ Aplicatia este dezvoltata in contextul lucrarii de licenta din cadrul ASE - Facu
 ### Baza de date
 
 - PostgreSQL
-
 ---
 
 ## Module existente in cod

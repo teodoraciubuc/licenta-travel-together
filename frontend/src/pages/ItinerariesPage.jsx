@@ -34,20 +34,74 @@ const inferCategoryFromKinds = (kinds) => {
     return 'other';
 };
 
-const fmtDate = (iso) => {
-    if (!iso) return '';
-    return new Date(iso).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
+const formatLocalDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+};
+
+const normalizeDateOnly = (value) => {
+    if (!value) return '';
+
+    if (value instanceof Date) {
+        return formatLocalDate(value);
+    }
+
+    const text = String(value);
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+        return text;
+    }
+
+    const parsedDate = new Date(text);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+        return '';
+    }
+
+    return formatLocalDate(parsedDate);
+};
+
+const makeLocalDate = (value) => {
+    const dateOnly = normalizeDateOnly(value);
+
+    if (!dateOnly) {
+        return new Date();
+    }
+
+    const [year, month, day] = dateOnly.split('-').map(Number);
+
+    return new Date(year, month - 1, day);
+};
+
+const fmtDate = (value) => {
+    if (!value) return '';
+
+    return makeLocalDate(value).toLocaleDateString('ro-RO', {
+        day: 'numeric',
+        month: 'short',
+    });
 };
 
 const diffDays = (start, end) => {
     if (!start || !end) return 1;
-    return Math.max(1, Math.round((new Date(end) - new Date(start)) / 86400000) + 1);
+
+    const startDate = makeLocalDate(start);
+    const endDate = makeLocalDate(end);
+
+    const startUtc = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const endUtc = Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+    return Math.max(1, Math.round((endUtc - startUtc) / 86400000) + 1);
 };
 
-const addDays = (iso, n) => {
-    const d = new Date(iso);
-    d.setDate(d.getDate() + n);
-    return d.toISOString().split('T')[0];
+const addDays = (value, n) => {
+    const date = makeLocalDate(value);
+    date.setDate(date.getDate() + n);
+
+    return formatLocalDate(date);
 };
 
 const makeIcon = (n, color = '#6366f1') =>
@@ -88,7 +142,7 @@ function CreateTripModal({ onCreated, initialData = {} }) {
             setError('Completeaza toate campurile obligatorii.');
             return;
         }
-        if (new Date(endDate) < new Date(startDate)) {
+        if (makeLocalDate(endDate) < makeLocalDate(startDate)) {
             setError('Data de final trebuie sa fie dupa data de start.');
             return;
         }
@@ -412,7 +466,13 @@ const ItinerariesPage = () => {
         (async () => {
             try {
                 const { data } = await api.get(`/itineraries/${id}`);
-                setTrip(data);
+
+                setTrip({
+                    ...data,
+                    startDate: normalizeDateOnly(data.startDate),
+                    endDate: normalizeDateOnly(data.endDate),
+                    stops: data.stops || [],
+                });
             } catch (e) {
                 console.error(e);
                 navigate('/dashboard');
@@ -455,11 +515,19 @@ const ItinerariesPage = () => {
     }, [days, selectedDay]);
 
     const handleCreated = (data) => {
-        setTrip(data);
+        const normalizedTrip = {
+            ...data,
+            startDate: normalizeDateOnly(data.startDate),
+            endDate: normalizeDateOnly(data.endDate),
+            stops: data.stops || [],
+        };
+
+        setTrip(normalizedTrip);
         setShowCreate(false);
         navigate(`/itineraries/${data.id}`, { replace: true });
+
         setTimeout(() => {
-            setAiSug({ text: 'Am gasit locatii populare in zona destinatiei tale. Poti adauga opriri din bara laterala!' });
+            setAiSug({ text: 'I found popular locations near your destination. You can add stops from the sidebar!' });
         }, 1400);
     };
 

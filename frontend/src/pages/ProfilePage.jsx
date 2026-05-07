@@ -122,7 +122,6 @@ export default function ProfilePage() {
                 }),
             });
             if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
                 setPwMsg('Could not change the password.');
             } else {
                 setPwMsg('Password changed successfully!');
