@@ -1,9 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+    Area,
+    AreaChart,
+    CartesianGrid,
+    Cell,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts';
 import '../styles/Profile.css';
 import TopNav from '../components/TopNav';
 
 const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001';
+const RADIAN = Math.PI / 180;
+const ANALYTICS_COLORS = {
+    visited: '#c4c0ec',
+    planned: '#8B84D8',
+    wishlist: '#C58A92',
+};
+const ANALYTICS_TOOLTIP_STYLE = {
+    backgroundColor: 'rgba(15, 23, 42, 0.96)',
+    border: '1px solid rgba(148, 163, 184, 0.18)',
+    borderRadius: '12px',
+    color: '#e2e8f0',
+    boxShadow: '0 18px 40px rgba(15, 23, 42, 0.28)',
+};
+
+function formatTimelineDate(value, mode = 'tick') {
+    if (!value) return '';
+
+    const parsed = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) return value;
+
+    if (mode === 'tooltip') {
+        return parsed.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    }
+
+    const month = parsed.toLocaleDateString('en-GB', { month: 'short' });
+    const year = String(parsed.getFullYear()).slice(-2);
+    return `${month} '${year}`;
+}
+
+function AnalyticsIcon() {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+                d="M4 19.5V5.5M4 19.5H20M8 15L11 12L14 14L19 8.5"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+            <circle cx="8" cy="15" r="1.5" fill="currentColor" />
+            <circle cx="11" cy="12" r="1.5" fill="currentColor" />
+            <circle cx="14" cy="14" r="1.5" fill="currentColor" />
+            <circle cx="19" cy="8.5" r="1.5" fill="currentColor" />
+        </svg>
+    );
+}
 
 function StatCard({ icon, value, label, color }) {
     return (
@@ -65,6 +123,66 @@ export default function ProfilePage() {
     }, [mapData]);
 
     /* ── avatar initials ── */
+    /* travel analytics */
+    const analyticsStatusData = React.useMemo(() => ([
+        {
+            key: 'visited',
+            name: 'Visited',
+            value: data?.mapCounts?.visited ?? 0,
+            color: ANALYTICS_COLORS.visited,
+        },
+        {
+            key: 'planned',
+            name: 'Planned',
+            value: data?.mapCounts?.planned ?? 0,
+            color: ANALYTICS_COLORS.planned,
+        },
+        {
+            key: 'wishlist',
+            name: 'Wishlist',
+            value: data?.mapCounts?.wishlist ?? 0,
+            color: ANALYTICS_COLORS.wishlist,
+        },
+    ]), [data]);
+
+    const tripsTimelineData = React.useMemo(() => {
+        const timeline = Array.isArray(data?.tripsTimeline) ? data.tripsTimeline : [];
+
+        if (!timeline.length) {
+            return [{ date: '', total: 0 }];
+        }
+
+        return timeline.map((point) => ({
+            date: point.date,
+            total: Number(point.total) || 0,
+        }));
+    }, [data]);
+
+    const analyticsTotal = analyticsStatusData.reduce((sum, item) => sum + item.value, 0);
+    const totalTrips = data?.itinerariesCount ?? 0;
+    const donutLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, value }) => {
+        if (!value || !analyticsTotal) return null;
+
+        const radius = innerRadius + (outerRadius - innerRadius) * 0.52;
+        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+        return (
+            <text
+                x={x}
+                y={y}
+                fill="#f8fafc"
+                textAnchor={x > cx ? 'start' : 'end'}
+                dominantBaseline="central"
+                fontSize={13}
+                fontWeight={700}
+            >
+                {`${Math.round(percent * 100)}%`}
+            </text>
+        );
+    };
+
+    /* avatar initials */
     const initials = storedName
         .split(' ')
         .map((w) => w[0])
@@ -219,10 +337,164 @@ export default function ProfilePage() {
                     />
                 </section>
 
+                <section className="prof-card prof-analytics">
+                    <div className="prof-card-header prof-analytics-header">
+                        <div className="prof-analytics-title-wrap">
+                            <span className="prof-analytics-title-icon">
+                                <AnalyticsIcon />
+                            </span>
+                            <h3>Travel analytics</h3>
+                        </div>
+                        <span className="prof-analytics-range">Last 12 months</span>
+                    </div>
+
+                    <div className="prof-analytics-grid">
+                        <div className="prof-analytics-panel">
+                            <div className="prof-analytics-panel-head">
+                                <div>
+                                    <h4>Countries by status</h4>
+                                </div>
+                            </div>
+
+                            <div className="prof-analytics-donut">
+                                <div className="prof-analytics-chart prof-analytics-chart--donut">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={[{ name: 'Total', value: 1 }]}
+                                                dataKey="value"
+                                                innerRadius={62}
+                                                outerRadius={92}
+                                                stroke="none"
+                                                fill="rgba(148, 163, 184, 0.14)"
+                                                isAnimationActive={false}
+                                            />
+                                            <Pie
+                                                data={analyticsStatusData}
+                                                dataKey="value"
+                                                nameKey="name"
+                                                innerRadius={62}
+                                                outerRadius={92}
+                                                paddingAngle={analyticsTotal ? 1.5 : 0}
+                                                stroke="rgba(15, 23, 42, 0.96)"
+                                                strokeWidth={2}
+                                                labelLine={false}
+                                                label={donutLabel}
+                                            >
+                                                {analyticsStatusData.map((entry) => (
+                                                    <Cell
+                                                        key={entry.key}
+                                                        fill={entry.color}
+                                                        fillOpacity={entry.value > 0 ? 1 : 0.25}
+                                                    />
+                                                ))}
+                                            </Pie>
+                                            <Tooltip
+                                                formatter={(value) => [value, 'Countries']}
+                                                contentStyle={ANALYTICS_TOOLTIP_STYLE}
+                                                itemStyle={{ color: '#e2e8f0' }}
+                                                labelStyle={{ color: '#cbd5e1' }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+
+                                    <div className="prof-analytics-donut-center">
+                                        <span>{analyticsTotal}</span>
+                                        <small>Total</small>
+                                    </div>
+                                </div>
+
+                                <div className="prof-analytics-legend">
+                                    {analyticsStatusData.map((entry) => (
+                                        <div key={entry.key} className="prof-analytics-legend-item">
+                                            <div className="prof-analytics-legend-label">
+                                                <span
+                                                    className="prof-analytics-legend-dot"
+                                                    style={{ '--legend-color': entry.color }}
+                                                />
+                                                <span>{entry.name}</span>
+                                            </div>
+                                            <strong>{entry.value}</strong>
+                                        </div>
+                                    ))}
+                                    <div className="prof-analytics-legend-total">
+                                        <span>Total</span>
+                                        <strong>{analyticsTotal}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="prof-analytics-panel">
+                            <div className="prof-analytics-panel-head">
+                                <div>
+                                    <h4>Trips over time</h4>
+                                </div>
+                                <span className="prof-analytics-summary">{totalTrips}</span>
+                            </div>
+
+                            <div className="prof-analytics-chart prof-analytics-chart--timeline">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart
+                                        data={tripsTimelineData}
+                                        margin={{ top: 12, right: 12, left: -18, bottom: 4 }}
+                                    >
+                                        <defs>
+                                            <linearGradient id="profTripsThemeGradient" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="rgba(139, 124, 255, 0.28)" />
+                                                <stop offset="95%" stopColor="rgba(139, 124, 255, 0.03)" />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid
+                                            stroke="rgba(148, 163, 184, 0.12)"
+                                            strokeDasharray="4 4"
+                                            vertical={false}
+                                        />
+                                        <XAxis
+                                            dataKey="date"
+                                            tickFormatter={(value) => formatTimelineDate(value)}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            minTickGap={20}
+                                            tickMargin={10}
+                                            tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                        />
+                                        <YAxis
+                                            dataKey="total"
+                                            allowDecimals={false}
+                                            axisLine={false}
+                                            tickLine={false}
+                                            width={28}
+                                            tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                            domain={[0, (max) => Math.max(1, max)]}
+                                        />
+                                        <Tooltip
+                                            formatter={(value) => [value, 'Trips']}
+                                            labelFormatter={(label) => formatTimelineDate(label, 'tooltip')}
+                                            contentStyle={ANALYTICS_TOOLTIP_STYLE}
+                                            itemStyle={{ color: '#e2e8f0' }}
+                                            labelStyle={{ color: '#cbd5e1' }}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="total"
+                                            stroke="#8B7CFF"
+                                            strokeWidth={3}
+                                            fill="url(#profTripsThemeGradient)"
+                                            dot={{ r: 4, fill: '#A699FF', stroke: '#e4defe', strokeWidth: 2 }}
+                                            activeDot={{ r: 5, fill: '#A699FF', stroke: '#f2efff', strokeWidth: 2 }}
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <div className="prof-grid">
 
                     {/* ══ RECENT ITINERARIES ══ */}
-                    <section className="prof-card">
+                    <section className="prof-card prof-card--recent">
                         <div className="prof-card-header">
                             <h3>Recent itineraries</h3>
                             <button className="prof-card-link" onClick={() => navigate('/itineraries/new')}>
@@ -241,24 +513,26 @@ export default function ProfilePage() {
                                 </button>
                             </div>
                         ) : (
-                            <ul className="prof-itin-list">
-                                {data.recentItineraries.map((it) => (
-                                    <li
-                                        key={it.id}
-                                        className="prof-itin-item"
-                                        onClick={() => navigate(`/itineraries/${it.id}`)}
-                                    >
-                                        <div className="prof-itin-icon">✈️</div>
-                                        <div className="prof-itin-body">
-                                            <span className="prof-itin-title">{it.title}</span>
-                                            <span className="prof-itin-dates">
-                                                {fmtDate(it.start_date)} → {fmtDate(it.end_date)}
-                                            </span>
-                                        </div>
-                                        <span className="prof-itin-arrow">›</span>
-                                    </li>
-                                ))}
-                            </ul>
+                            <div className="prof-itin-scroll">
+                                <ul className="prof-itin-list">
+                                    {data.recentItineraries.map((it) => (
+                                        <li
+                                            key={it.id}
+                                            className="prof-itin-item"
+                                            onClick={() => navigate(`/itineraries/${it.id}`)}
+                                        >
+                                            <div className="prof-itin-icon">✈️</div>
+                                            <div className="prof-itin-body">
+                                                <span className="prof-itin-title">{it.title}</span>
+                                                <span className="prof-itin-dates">
+                                                    {fmtDate(it.start_date)} → {fmtDate(it.end_date)}
+                                                </span>
+                                            </div>
+                                            <span className="prof-itin-arrow">›</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
                         )}
                     </section>
 

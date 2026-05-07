@@ -19,16 +19,78 @@ async function getDashboard(req, res) {
     const preferencesCount = parseInt(prefRows[0]?.cnt || 0, 10);
 
     const { rows: mapRows } = await pool.query(
-      'SELECT status, COUNT(*) AS cnt FROM "User_Map_Status" WHERE user_id = $1 GROUP BY status',
+      `WITH country_statuses AS (
+         SELECT
+           COALESCE(
+             NULLIF(UPPER(TRIM(d.country)), ''),
+             NULLIF(LOWER(TRIM(d.country_en)), '')
+           ) AS country_key,
+           MAX(
+             CASE ums.status
+               WHEN 'visited' THEN 3
+               WHEN 'planned' THEN 2
+               WHEN 'wishlist' THEN 1
+               ELSE 0
+             END
+           ) AS status_rank
+         FROM "User_Map_Status" ums
+         JOIN "Destinations" d ON d.id = ums.destination_id
+         WHERE ums.user_id = $1
+         GROUP BY COALESCE(
+           NULLIF(UPPER(TRIM(d.country)), ''),
+           NULLIF(LOWER(TRIM(d.country_en)), '')
+         )
+       )
+       SELECT status_rank, COUNT(*) AS cnt
+       FROM country_statuses
+       WHERE country_key IS NOT NULL
+       GROUP BY status_rank`,
       [userId]
     );
 
     const mapCounts = { visited: 0, wishlist: 0, planned: 0 };
+    const statusKeyByRank = { 1: "wishlist", 2: "planned", 3: "visited" };
     for (const r of mapRows) {
-      if (mapCounts[r.status] !== undefined) {
-        mapCounts[r.status] = parseInt(r.cnt, 10);
+      const statusKey = statusKeyByRank[parseInt(r.status_rank, 10)];
+      if (statusKey) {
+        mapCounts[statusKey] = parseInt(r.cnt, 10);
       }
     }
+
+    const { rows: tripsTimelineRows } = await pool.query(
+      `WITH bounds AS (
+         SELECT date_trunc(
+           'month',
+           GREATEST(CURRENT_DATE, COALESCE(MAX(start_date), CURRENT_DATE))
+         )::date AS end_month
+         FROM "Itineraries"
+         WHERE user_id = $1
+           AND start_date IS NOT NULL
+       ),
+       month_series AS (
+         SELECT generate_series(
+           (SELECT end_month FROM bounds) - INTERVAL '11 months',
+           (SELECT end_month FROM bounds),
+           INTERVAL '1 month'
+         )::date AS month_start
+       )
+       SELECT
+         TO_CHAR(ms.month_start, 'YYYY-MM-DD') AS date,
+         COUNT(it.id)::int AS total
+       FROM month_series ms
+       LEFT JOIN "Itineraries" it
+         ON it.user_id = $1
+        AND it.start_date IS NOT NULL
+        AND date_trunc('month', it.start_date)::date <= ms.month_start
+       GROUP BY ms.month_start
+       ORDER BY ms.month_start ASC`,
+      [userId]
+    );
+
+    const tripsTimeline = tripsTimelineRows.map((row) => ({
+      date: row.date,
+      total: parseInt(row.total, 10) || 0,
+    }));
 
     const { rows: itCountRows } = await pool.query(
       'SELECT COUNT(*) AS cnt FROM "Itineraries" WHERE user_id = $1',
@@ -37,7 +99,7 @@ async function getDashboard(req, res) {
     const itinerariesCount = parseInt(itCountRows[0]?.cnt || 0, 10);
 
     const { rows: recentIts } = await pool.query(
-      'SELECT id, title, start_date, end_date FROM "Itineraries" WHERE user_id = $1 ORDER BY id DESC LIMIT 3',
+      'SELECT id, title, start_date, end_date FROM "Itineraries" WHERE user_id = $1 ORDER BY id DESC',
       [userId]
     );
 
@@ -98,6 +160,7 @@ async function getDashboard(req, res) {
         hasPreferences: preferencesCount > 0,
       },
       mapCounts,
+      tripsTimeline,
       itinerariesCount,
       recentItineraries: recentIts,
       recommendations,
