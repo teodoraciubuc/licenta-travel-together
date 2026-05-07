@@ -1,5 +1,7 @@
 const pool = require("../db");
 
+const STATUS_PRIORITY = { wishlist: 1, planned: 2, visited: 3 };
+
 async function getDashboard(req, res) {
   try {
     const userId = req.user?.id || req.user?.userId;
@@ -19,41 +21,36 @@ async function getDashboard(req, res) {
     const preferencesCount = parseInt(prefRows[0]?.cnt || 0, 10);
 
     const { rows: mapRows } = await pool.query(
-      `WITH country_statuses AS (
-         SELECT
-           COALESCE(
-             NULLIF(UPPER(TRIM(d.country)), ''),
-             NULLIF(LOWER(TRIM(d.country_en)), '')
-           ) AS country_key,
-           MAX(
-             CASE ums.status
-               WHEN 'visited' THEN 3
-               WHEN 'planned' THEN 2
-               WHEN 'wishlist' THEN 1
-               ELSE 0
-             END
-           ) AS status_rank
-         FROM "User_Map_Status" ums
-         JOIN "Destinations" d ON d.id = ums.destination_id
-         WHERE ums.user_id = $1
-         GROUP BY COALESCE(
-           NULLIF(UPPER(TRIM(d.country)), ''),
-           NULLIF(LOWER(TRIM(d.country_en)), '')
-         )
-       )
-       SELECT status_rank, COUNT(*) AS cnt
-       FROM country_statuses
-       WHERE country_key IS NOT NULL
-       GROUP BY status_rank`,
+      `SELECT
+         d.country,
+         d.country_en,
+         ums.status
+       FROM "User_Map_Status" ums
+       JOIN "Destinations" d ON d.id = ums.destination_id
+       WHERE ums.user_id = $1`,
       [userId]
     );
 
     const mapCounts = { visited: 0, wishlist: 0, planned: 0 };
-    const statusKeyByRank = { 1: "wishlist", 2: "planned", 3: "visited" };
+    const countriesMap = {};
+
     for (const r of mapRows) {
-      const statusKey = statusKeyByRank[parseInt(r.status_rank, 10)];
-      if (statusKey) {
-        mapCounts[statusKey] = parseInt(r.cnt, 10);
+      const mainKey = (r.country_en || r.country || "").trim().toLowerCase();
+      if (!mainKey) continue;
+
+      if (!countriesMap[mainKey]) {
+        countriesMap[mainKey] = { status: r.status };
+        continue;
+      }
+
+      if (STATUS_PRIORITY[r.status] > STATUS_PRIORITY[countriesMap[mainKey].status]) {
+        countriesMap[mainKey].status = r.status;
+      }
+    }
+
+    for (const country of Object.values(countriesMap)) {
+      if (mapCounts[country.status] !== undefined) {
+        mapCounts[country.status] += 1;
       }
     }
 

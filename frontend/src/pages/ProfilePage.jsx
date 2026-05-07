@@ -92,19 +92,13 @@ export default function ProfilePage() {
 
     const storedName = localStorage.getItem('user_name') || 'Traveler';
 
-    const [mapData, setMapData] = useState(null);
-
     /* ── fetch dashboard + map data ── */
     useEffect(() => {
         (async () => {
             try {
                 const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` };
-                const [dashRes, mapRes] = await Promise.all([
-                    fetch(`${BASE}/api/dashboard`, { headers }),
-                    fetch(`${BASE}/api/map/me`, { headers }),
-                ]);
+                const dashRes = await fetch(`${BASE}/api/dashboard`, { headers });
                 if (dashRes.ok) setData(await dashRes.json());
-                if (mapRes.ok) setMapData(await mapRes.json());
             } catch {
                 /* silently degrade */
             } finally {
@@ -115,12 +109,13 @@ export default function ProfilePage() {
 
     /* ── country counts by status ── */
     const countryCounts = React.useMemo(() => {
-        const counts = { visited: 0, planned: 0, wishlist: 0 };
-        for (const c of (mapData?.countries || [])) {
-            if (counts[c.status] !== undefined) counts[c.status]++;
-        }
-        return counts;
-    }, [mapData]);
+        const counts = data?.mapCounts || {};
+        return {
+            visited: Number(counts.visited) || 0,
+            planned: Number(counts.planned) || 0,
+            wishlist: Number(counts.wishlist) || 0,
+        };
+    }, [data]);
 
     /* ── avatar initials ── */
     /* travel analytics */
@@ -128,22 +123,22 @@ export default function ProfilePage() {
         {
             key: 'visited',
             name: 'Visited',
-            value: data?.mapCounts?.visited ?? 0,
+            value: countryCounts.visited,
             color: ANALYTICS_COLORS.visited,
         },
         {
             key: 'planned',
             name: 'Planned',
-            value: data?.mapCounts?.planned ?? 0,
+            value: countryCounts.planned,
             color: ANALYTICS_COLORS.planned,
         },
         {
             key: 'wishlist',
             name: 'Wishlist',
-            value: data?.mapCounts?.wishlist ?? 0,
+            value: countryCounts.wishlist,
             color: ANALYTICS_COLORS.wishlist,
         },
-    ]), [data]);
+    ]), [countryCounts]);
 
     const tripsTimelineData = React.useMemo(() => {
         const timeline = Array.isArray(data?.tripsTimeline) ? data.tripsTimeline : [];

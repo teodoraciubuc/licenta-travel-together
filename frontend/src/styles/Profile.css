@@ -220,6 +220,7 @@
     display: flex;
     flex-direction: column;
     gap: 1.15rem;
+    min-width: 0;
 }
 
 .prof-analytics-panel-head {
@@ -254,10 +255,9 @@
 
 .prof-analytics-donut {
     display: grid;
-    grid-template-columns: minmax(230px, 1fr) minmax(180px, 0.84fr);
-    gap: 1.35rem;
+    grid-template-columns: minmax(220px, 260px) minmax(160px, 1fr);
+    gap: 1.1rem;
     align-items: center;
-    flex: 1;
 }
 
 .prof-analytics-chart {
@@ -305,6 +305,9 @@
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
+    min-width: 0;
+    width: 14px;
+
 }
 
 .prof-analytics-legend-item {
