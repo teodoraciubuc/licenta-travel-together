@@ -457,7 +457,6 @@ const ItinerariesPage = () => {
     const [selectedDay, setSelectedDay] = useState(0);
     const [showAddStop, setShowAddStop] = useState(false);
     const [aiSuggestion, setAiSug] = useState(null);
-    const [saving, setSaving] = useState(false);
     const [editingName, setEditingName] = useState(false);
     const [tmpName, setTmpName] = useState('');
 
@@ -501,11 +500,7 @@ const ItinerariesPage = () => {
         }));
     }, [trip]);
 
-    const progress = useMemo(() => {
-        if (!trip?.stops?.length) return 0;
-        const done = trip.stops.filter((s) => s.done).length;
-        return Math.round((done / trip.stops.length) * 100);
-    }, [trip]);
+
 
     const mapPoints = useMemo(() => {
         if (!days[selectedDay]) return [];
@@ -558,13 +553,6 @@ const ItinerariesPage = () => {
             ...prev,
             stops: (prev.stops || []).map((s) => s.id === stopId ? { ...s, done: !s.done } : s),
         }));
-    };
-
-    const handleSave = async () => {
-        if (!trip) return;
-        setSaving(true);
-        try { await api.put(`/itineraries/${trip.id}`, { name: trip.name }); } catch (e) { console.error(e); }
-        finally { setSaving(false); }
     };
 
     const handleBookAccommodations = () => {
@@ -650,15 +638,8 @@ const ItinerariesPage = () => {
                         </div>
 
                         <div className="itin-header-actions">
-                            <div className="itin-progress-wrap">
-                                <div className="itin-progress-label">{progress}% complet</div>
-                                <div className="itin-progress-bar">
-                                    <div className="itin-progress-fill" style={{ width: `${progress}%` }} />
-                                </div>
-                            </div>
-                            <button className="itin-btn-ghost" onClick={handleBookAccommodations}>Book your accommodations</button>
-                            <button className="itin-btn-primary" onClick={handleSave} disabled={saving}>
-                                {saving ? '...' : '💾 Salveaza'}
+                            <button className="itin-btn-ghost" onClick={handleBookAccommodations}>
+                                Book your accommodations
                             </button>
                         </div>
                     </div>
