@@ -8,6 +8,7 @@ const recommendationsRoutes = require("./routes/recommendations.routes");
 const mapRoutes = require("./routes/map.routes");
 const itinerariesRoutes = require("./routes/itineraries.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
+const chatRoutes = require("./routes/chat.routes");
 
 const app = express();
 app.use(cors());
@@ -32,5 +33,6 @@ app.use("/api/recommendations", recommendationsRoutes);
 app.use("/api/map", mapRoutes);
 app.use("/api/itineraries", itinerariesRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/chat", chatRoutes);
 
 module.exports = app;

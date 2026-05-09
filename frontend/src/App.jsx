@@ -8,6 +8,7 @@ import DashboardPage from "./pages/DashboardPage";
 import ProfilePage from './pages/ProfilePage';
 import FlightExplorePage from './pages/FlightExplorePage';
 import AccommodationsPage from './pages/AccommodationsPage';
+import ChatBot from "./components/ChatBot";
 function Layout({ children }) {
   return <>{children}</>;
 }
@@ -81,6 +82,7 @@ export default function App() {
         />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      <ChatBot />
     </BrowserRouter>
   );
 }
