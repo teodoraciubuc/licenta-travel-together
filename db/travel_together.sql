@@ -1,147 +1,181 @@
--- Stergere tabele daca exista (echivalent SET FOREIGN_KEY_CHECKS = 0 prin CASCADE)
-DROP TABLE IF EXISTS "Chat_Logs" CASCADE;
-DROP TABLE IF EXISTS "Itinerary_Items" CASCADE;
-DROP TABLE IF EXISTS "Itineraries" CASCADE;
-DROP TABLE IF EXISTS "User_Map_Status" CASCADE;
-DROP TABLE IF EXISTS "Destination_Tags" CASCADE;
-DROP TABLE IF EXISTS "User_Preferences" CASCADE;
-DROP TABLE IF EXISTS "Destinations" CASCADE;
-DROP TABLE IF EXISTS "Tags" CASCADE;
-DROP TABLE IF EXISTS "Users" CASCADE;
+BEGIN;
 
--- 1) USERS
-CREATE TABLE "Users" (
-  "id" SERIAL PRIMARY KEY,
-  "username" VARCHAR(255) NOT NULL,
-  "email" VARCHAR(255) NOT NULL,
-  "password_hash" VARCHAR(255) NOT NULL,
-  "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "uq_users_email" UNIQUE ("email")
+
+CREATE TABLE IF NOT EXISTS public."Chat_Logs"
+(
+    id serial NOT NULL,
+    user_id integer NOT NULL,
+    message text COLLATE pg_catalog."default" NOT NULL,
+    response text COLLATE pg_catalog."default",
+    "timestamp" timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Chat_Logs_pkey" PRIMARY KEY (id)
 );
 
--- 2) TAGS
-CREATE TABLE "Tags" (
-  "id" SERIAL PRIMARY KEY,
-  "name" VARCHAR(255) NOT NULL,
-  CONSTRAINT "uq_tags_name" UNIQUE ("name")
+CREATE TABLE IF NOT EXISTS public."Destination_Tags"
+(
+    destination_id integer NOT NULL,
+    tag_id integer NOT NULL,
+    CONSTRAINT "Destination_Tags_pkey" PRIMARY KEY (destination_id, tag_id)
 );
 
--- 3) DESTINATIONS
-CREATE TABLE "Destinations" (
-  "id" SERIAL PRIMARY KEY,
-  "name" VARCHAR(255) NOT NULL,
-  "country" VARCHAR(255) NOT NULL,
-  "description" TEXT NULL,
-  "latitude" DECIMAL(10,7) NULL,
-  "longitude" DECIMAL(10,7) NULL,
-
-  -- pentru seed_opentripmap.mjs
-  "source" VARCHAR(50) NULL,
-  "source_id" VARCHAR(100) NULL,
-  "kinds" TEXT NULL,
-  "otm_rate" INT NULL DEFAULT 0,
-
-  -- pentru enrich_destinations_en.mjs
-  "country_en" TEXT NULL,
-  "description_en" TEXT NULL
+CREATE TABLE IF NOT EXISTS public."Destinations"
+(
+    id serial NOT NULL,
+    name character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    country character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    latitude numeric(10, 7),
+    longitude numeric(10, 7),
+    image_url text COLLATE pg_catalog."default",
+    country_en text COLLATE pg_catalog."default",
+    description_en text COLLATE pg_catalog."default",
+    source character varying(50) COLLATE pg_catalog."default",
+    source_id character varying(100) COLLATE pg_catalog."default",
+    user_submitted boolean DEFAULT false,
+    submitted_by integer,
+    CONSTRAINT "Destinations_pkey" PRIMARY KEY (id)
 );
 
--- necesar pentru ON CONFLICT (source, source_id)
-CREATE UNIQUE INDEX "uq_destinations_source_sourceid"
-  ON "Destinations" ("source", "source_id");
-
-CREATE INDEX "idx_destinations_country" ON "Destinations" ("country");
-
--- 4) USER_PREFERENCES
-CREATE TABLE "User_Preferences" (
-  "user_id" INT NOT NULL,
-  "tag_id" INT NOT NULL,
-  "score" INT NOT NULL DEFAULT 0,
-  PRIMARY KEY ("user_id", "tag_id"),
-  CONSTRAINT "fk_user_preferences_user" FOREIGN KEY ("user_id") REFERENCES "Users" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT "fk_user_preferences_tag" FOREIGN KEY ("tag_id") REFERENCES "Tags" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+CREATE TABLE IF NOT EXISTS public."Itineraries"
+(
+    id serial NOT NULL,
+    user_id integer NOT NULL,
+    title character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    start_date date,
+    end_date date,
+    created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    destination character varying(255) COLLATE pg_catalog."default",
+    name character varying(255) COLLATE pg_catalog."default",
+    CONSTRAINT "Itineraries_pkey" PRIMARY KEY (id)
 );
 
--- 5) DESTINATION_TAGS (M:N)
-CREATE TABLE "Destination_Tags" (
-  "destination_id" INT NOT NULL,
-  "tag_id" INT NOT NULL,
-  PRIMARY KEY ("destination_id", "tag_id"),
-  CONSTRAINT "fk_destination_tags_destination" FOREIGN KEY ("destination_id") REFERENCES "Destinations" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT "fk_destination_tags_tag" FOREIGN KEY ("tag_id") REFERENCES "Tags" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+CREATE TABLE IF NOT EXISTS public."Itinerary_Items"
+(
+    id serial NOT NULL,
+    itinerary_id integer NOT NULL,
+    destination_id integer NOT NULL,
+    day_number integer NOT NULL DEFAULT 1,
+    order_index integer,
+    category character varying(50) COLLATE pg_catalog."default" DEFAULT 'other'::character varying,
+    CONSTRAINT "Itinerary_Items_pkey" PRIMARY KEY (id)
 );
 
--- 6) USER_MAP_STATUS
-CREATE TABLE "User_Map_Status" (
-  "user_id" INT NOT NULL,
-  "destination_id" INT NOT NULL,
-  "status" VARCHAR(255) NOT NULL,
-  "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY ("user_id", "destination_id"),
-  CONSTRAINT "fk_user_map_status_user" FOREIGN KEY ("user_id") REFERENCES "Users" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT "fk_user_map_status_destination" FOREIGN KEY ("destination_id") REFERENCES "Destinations" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+CREATE TABLE IF NOT EXISTS public."Tags"
+(
+    id serial NOT NULL,
+    name character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT "Tags_pkey" PRIMARY KEY (id),
+    CONSTRAINT uq_tags_name UNIQUE (name)
 );
 
--- 7) ITINERARIES
-CREATE TABLE "Itineraries" (
-  "id" SERIAL PRIMARY KEY,
-  "user_id" INT NOT NULL,
-  "title" VARCHAR(255) NOT NULL,
-  "start_date" DATE NULL,
-  "end_date" DATE NULL,
-  "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "fk_itineraries_user" FOREIGN KEY ("user_id") REFERENCES "Users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+CREATE TABLE IF NOT EXISTS public."User_Map_Status"
+(
+    id serial NOT NULL,
+    user_id integer NOT NULL,
+    destination_id integer NOT NULL,
+    status character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    updated_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    rating smallint,
+    source character varying(10) COLLATE pg_catalog."default" DEFAULT 'city'::character varying,
+    CONSTRAINT "User_Map_Status_pkey" PRIMARY KEY (id),
+    CONSTRAINT uq_user_map_status_user_dest UNIQUE (user_id, destination_id)
 );
 
--- 8) ITINERARY_ITEMS
-CREATE TABLE "Itinerary_Items" (
-  "id" SERIAL PRIMARY KEY,
-  "itinerary_id" INT NOT NULL,
-  "destination_id" INT NOT NULL,
-  "day_number" INT NOT NULL DEFAULT 1,
-  "order_index" INT NULL,
-  CONSTRAINT "fk_items_itinerary" FOREIGN KEY ("itinerary_id") REFERENCES "Itineraries" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT "fk_items_destination" FOREIGN KEY ("destination_id") REFERENCES "Destinations" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+CREATE TABLE IF NOT EXISTS public."User_Preferences"
+(
+    id serial NOT NULL,
+    user_id integer NOT NULL,
+    tag_id integer NOT NULL,
+    score integer NOT NULL DEFAULT 0,
+    CONSTRAINT "User_Preferences_pkey" PRIMARY KEY (id),
+    CONSTRAINT uq_user_preferences_user_tag UNIQUE (user_id, tag_id)
 );
 
--- 9) CHAT_LOGS
-CREATE TABLE "Chat_Logs" (
-  "id" SERIAL PRIMARY KEY,
-  "user_id" INT NOT NULL,
-  "message" TEXT NOT NULL,
-  "response" TEXT NULL,
-  "timestamp" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT "fk_chat_logs_user" FOREIGN KEY ("user_id") REFERENCES "Users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+CREATE TABLE IF NOT EXISTS public."Users"
+(
+    id serial NOT NULL,
+    username character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    email character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    password_hash character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    slider_preferences jsonb,
+    CONSTRAINT "Users_pkey" PRIMARY KEY (id),
+    CONSTRAINT uq_users_email UNIQUE (email)
 );
 
--- 10) DATE INITIALE PENTRU TAGS
-INSERT INTO "Tags" (id, name) VALUES
-(1, 'Munte'),
-(2, 'Plaja / Litoral'),
-(3, 'Oras istoric'),
-(4, 'Natura / Parcuri nationale'),
-(5, 'Lacuri / Cascade'),
-(6, 'Soare si caldura'),
-(7, 'Zapada si iarna'),
-(8, 'Clima temperata'),
-(9, 'Vizitare muzee'),
-(10, 'Drumetii / Hiking'),
-(11, 'Shopping'),
-(12, 'Gastronomie'),
-(13, 'Sporturi de apa'),
-(14, 'Viata de noapte / Clubbing')
-ON CONFLICT (name) DO NOTHING;
+ALTER TABLE IF EXISTS public."Chat_Logs"
+    ADD CONSTRAINT fk_chat_logs_user FOREIGN KEY (user_id)
+    REFERENCES public."Users" (id) MATCH SIMPLE
+    ON UPDATE CASCADE
+    ON DELETE CASCADE;
 
--- Resetare secventa pentru ID-uri la Tags 
-SELECT setval(' "Tags_id_seq" ', (SELECT MAX(id) FROM "Tags"));
 
--- 11) ADAUGARE COLOANA IMAGE_URL DACA LIPSESTE
-ALTER TABLE "Destinations" ADD COLUMN IF NOT EXISTS "image_url" TEXT;
+ALTER TABLE IF EXISTS public."Destination_Tags"
+    ADD CONSTRAINT fk_destination_tags_destination FOREIGN KEY (destination_id)
+    REFERENCES public."Destinations" (id) MATCH SIMPLE
+    ON UPDATE CASCADE
+    ON DELETE CASCADE;
 
--- 12) CONSTRANGERI SUPLIMENTARE (PENTRU LOGICA DIN COD)
-ALTER TABLE "User_Map_Status" DROP CONSTRAINT IF EXISTS "uq_user_map_status_user_dest";
-ALTER TABLE "User_Map_Status" ADD CONSTRAINT "uq_user_map_status_user_dest" UNIQUE ("user_id", "destination_id");
 
--- Previne dublarea aceleiasi preferinte pentru user
-ALTER TABLE "User_Preferences" DROP CONSTRAINT IF EXISTS "uq_user_preferences_user_tag";
-ALTER TABLE "User_Preferences" ADD CONSTRAINT "uq_user_preferences_user_tag" UNIQUE ("user_id", "tag_id");
+ALTER TABLE IF EXISTS public."Destination_Tags"
+    ADD CONSTRAINT fk_destination_tags_tag FOREIGN KEY (tag_id)
+    REFERENCES public."Tags" (id) MATCH SIMPLE
+    ON UPDATE CASCADE
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS public."Destinations"
+    ADD CONSTRAINT "Destinations_submitted_by_fkey" FOREIGN KEY (submitted_by)
+    REFERENCES public."Users" (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+
+
+ALTER TABLE IF EXISTS public."Itineraries"
+    ADD CONSTRAINT fk_itineraries_user FOREIGN KEY (user_id)
+    REFERENCES public."Users" (id) MATCH SIMPLE
+    ON UPDATE CASCADE
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS public."Itinerary_Items"
+    ADD CONSTRAINT fk_items_destination FOREIGN KEY (destination_id)
+    REFERENCES public."Destinations" (id) MATCH SIMPLE
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT;
+
+
+ALTER TABLE IF EXISTS public."Itinerary_Items"
+    ADD CONSTRAINT fk_items_itinerary FOREIGN KEY (itinerary_id)
+    REFERENCES public."Itineraries" (id) MATCH SIMPLE
+    ON UPDATE CASCADE
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS public."User_Map_Status"
+    ADD CONSTRAINT fk_user_map_status_destination FOREIGN KEY (destination_id)
+    REFERENCES public."Destinations" (id) MATCH SIMPLE
+    ON UPDATE CASCADE
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS public."User_Map_Status"
+    ADD CONSTRAINT fk_user_map_status_user FOREIGN KEY (user_id)
+    REFERENCES public."Users" (id) MATCH SIMPLE
+    ON UPDATE CASCADE
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS public."User_Preferences"
+    ADD CONSTRAINT fk_user_preferences_tag FOREIGN KEY (tag_id)
+    REFERENCES public."Tags" (id) MATCH SIMPLE
+    ON UPDATE CASCADE
+    ON DELETE CASCADE;
+
+
+ALTER TABLE IF EXISTS public."User_Preferences"
+    ADD CONSTRAINT fk_user_preferences_user FOREIGN KEY (user_id)
+    REFERENCES public."Users" (id) MATCH SIMPLE
+    ON UPDATE CASCADE
+    ON DELETE CASCADE;
+
+END;
